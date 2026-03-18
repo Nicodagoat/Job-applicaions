@@ -302,19 +302,30 @@
   <section id="scraper" class="page">
     <div class="page-header">
       <h1>Scraper</h1>
-      <p>Search for new job listings on LinkedIn, Indeed, and more</p>
+      <p>Search for new job listings — only open roles are saved</p>
     </div>
+
+    <div class="card">
+      <h3>🔌 Job Sources</h3>
+      <div id="sources-list"><div class="loading"><span class="spin"></span>Loading…</div></div>
+    </div>
+
     <div class="card">
       <h3>🔍 Run a Search</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
-        <strong>Dry run</strong> previews what would be found without saving anything.
-        <strong>Live run</strong> saves matching jobs to your database.
+        <strong>Dry run</strong> shows what would be found without saving anything.
+        <strong>Live run</strong> saves matching jobs and validates they're still open.
       </p>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn btn-ghost" onclick="runScraper(true)">🔍 Dry Run (preview)</button>
-        <button class="btn btn-primary" onclick="runScraper(false)">🚀 Live Run (save jobs)</button>
+        <button class="btn btn-primary" onclick="runScraper(false)">🚀 Live Run (save + validate)</button>
+        <button class="btn btn-ghost" onclick="runValidation()" title="Re-check that saved jobs are still open">
+          ✓ Re-validate Open Jobs
+        </button>
       </div>
+      <div id="validation-stats" style="margin-top:14px;font-size:12px;color:var(--muted)"></div>
     </div>
+
     <div class="card">
       <h3>📜 Recent Runs</h3>
       <div id="scraper-runs"><div class="loading"><span class="spin"></span>Loading…</div></div>
@@ -369,7 +380,7 @@ function nav(id, el) {
     applications: loadApps,
     cvs: loadCVs,
     tasks: loadTasks,
-    scraper: loadScraperRuns,
+    scraper: loadScraperPage,
   })[id]?.();
 }
 
@@ -528,10 +539,17 @@ function jobTable(jobs, actions) {
   return `<table>
     <thead><tr>
       <th>Job Title</th><th>Company</th><th>Location</th><th>Source</th>
-      <th>Match</th><th>ESG</th>${actions ? '<th style="text-align:right">Action</th>' : ''}
+      <th>Match</th><th>Tags</th>${actions ? '<th style="text-align:right">Action</th>' : ''}
     </tr></thead>
     <tbody>
-    ${jobs.map(j => `<tr>
+    ${jobs.map(j => {
+      const isOpen = j.is_active !== 0;  // null (unverified) = assume open
+      const verified = j.verified_at;
+      const openBadge = verified
+        ? (isOpen ? '<span class="badge b-green" title="Verified open">✓ Open</span>'
+                  : '<span class="badge b-red" title="Job appears closed">✗ Closed</span>')
+        : '<span class="badge b-gray" title="Not yet verified">Unverified</span>';
+      return `<tr style="${isOpen?'':'opacity:.45;'}">
       <td><a href="${j.source_url||'#'}" target="_blank">${j.job_title}</a></td>
       <td>${j.company}</td>
       <td>${j.location||j.country||'—'}${j.remote?' <span class="badge b-blue">Remote</span>':''}</td>
@@ -540,9 +558,13 @@ function jobTable(jobs, actions) {
         <div class="sbar-track"><div class="sbar-fill" style="width:${j.match_score}%;background:${scoreCol(j.match_score)}"></div></div>
         <span style="font-size:12px;min-width:34px">${Math.round(j.match_score)}%</span>
       </div></td>
-      <td>${j.esg_relevant ? '<span class="badge b-green">ESG</span>' : ''}</td>
-      ${actions ? `<td style="text-align:right"><button class="btn btn-primary btn-sm" onclick="openCL(${j.id},'${esc(j.job_title)}','${esc(j.company)}')">✍ Apply</button></td>` : ''}
-    </tr>`).join('')}
+      <td style="white-space:nowrap">${openBadge} ${j.esg_relevant ? '<span class="badge b-green">ESG</span>' : ''}</td>
+      ${actions ? `<td style="text-align:right">
+        ${isOpen
+          ? `<button class="btn btn-primary btn-sm" onclick="openCL(${j.id},'${esc(j.job_title)}','${esc(j.company)}')">✍ Apply</button>`
+          : `<span style="font-size:11px;color:var(--muted)">Role closed</span>`}
+      </td>` : ''}
+    </tr>`;}).join('')}
     </tbody></table>`;
 }
 
@@ -819,28 +841,74 @@ async function completeTask(id) {
 // ══════════════════════════════════════════════
 // Scraper
 // ══════════════════════════════════════════════
+async function loadScraperPage() {
+  loadScraperRuns();
+  loadSources();
+  loadValidationStats();
+}
+
+async function loadSources() {
+  const el = document.getElementById('sources-list');
+  try {
+    const sources = await api('/api/scraper/sources');
+    el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+      ${sources.map(s => `
+        <div style="background:var(--surface2);border:1px solid ${s.configured?'var(--border)':'rgba(245,158,11,.3)'};border-radius:8px;padding:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${s.configured?'var(--green)':'var(--amber)'}"></div>
+            <strong style="font-size:13px">${s.label}</strong>
+            ${s.free ? '<span class="badge b-green" style="font-size:10px">FREE</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${s.description}</div>
+          ${!s.configured && s.setup_url
+            ? `<a href="${s.setup_url}" target="_blank" style="font-size:11px">Get free key →</a>`
+            : s.configured ? `<span style="font-size:11px;color:var(--green)">✓ Ready</span>` : ''}
+        </div>`).join('')}
+    </div>`;
+  } catch(e) { el.innerHTML = err(e); }
+}
+
+async function loadValidationStats() {
+  try {
+    const stats = await api('/api/scraper/validation-stats');
+    document.getElementById('validation-stats').innerHTML =
+      `📊 Database: ${stats.total} jobs total · ${stats.active} open · ${stats.closed} closed · ${stats.unverified} not yet checked`;
+  } catch { }
+}
+
 async function loadScraperRuns() {
   const el = document.getElementById('scraper-runs');
   try {
     const runs = await api('/api/scraper/runs');
     if (!runs.length) { el.innerHTML = '<div class="empty">No scraping runs yet. Click a button above to start.</div>'; return; }
     el.innerHTML = `<table>
-      <thead><tr><th>Source</th><th>Started</th><th>Status</th><th>Found</th><th>New</th><th>Error</th></tr></thead>
+      <thead><tr><th>Started</th><th>Status</th><th>Total Found</th><th>New Saved</th></tr></thead>
       <tbody>${runs.map(r=>`<tr>
-        <td>${r.source}</td>
         <td>${(r.started_at||'').slice(0,19).replace('T',' ')}</td>
         <td><span class="badge ${r.status==='completed'?'b-green':r.status==='failed'?'b-red':'b-amber'}">${r.status}</span></td>
-        <td>${r.jobs_found}</td><td>${r.jobs_new}</td>
-        <td style="font-size:11px;color:var(--red)">${r.error||''}</td>
+        <td>${r.jobs_found}</td>
+        <td>${r.jobs_new}</td>
       </tr>`).join('')}</tbody></table>`;
   } catch(e) { el.innerHTML = err(e); }
 }
 
 async function runScraper(dry) {
   try {
-    await api(`/api/scraper/run?dry_run=${dry}`,{method:'POST'});
-    toast(dry?'Dry run started — check back in a minute':'Live run started — jobs will appear in Job Matches','success');
-    setTimeout(loadScraperRuns, 3000);
+    const validate = !dry;
+    await api(`/api/scraper/run?dry_run=${dry}&validate=${validate}`, {method:'POST'});
+    const msg = dry
+      ? 'Dry run started — check logs/app.log to see preview results'
+      : 'Live run started — jobs will appear in Job Matches once validated';
+    toast(msg, 'success');
+    setTimeout(() => { loadScraperRuns(); loadValidationStats(); }, 4000);
+  } catch(e) { toast(e.message,'error'); }
+}
+
+async function runValidation() {
+  try {
+    await api('/api/scraper/validate', {method:'POST'});
+    toast('Validation started — checking that saved jobs are still open…', 'success');
+    setTimeout(loadValidationStats, 5000);
   } catch(e) { toast(e.message,'error'); }
 }
 

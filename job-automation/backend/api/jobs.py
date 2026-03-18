@@ -32,8 +32,12 @@ def get_jobs(
     page_size: int = Query(20, ge=1, le=100),
     min_score: float = Query(0, ge=0, le=100),
     search: Optional[str] = Query(None),
+    active_only: bool = Query(True, description="Only show verified-open jobs"),
 ):
-    return list_jobs(page=page, page_size=page_size, min_score=min_score, search=search)
+    return list_jobs(
+        page=page, page_size=page_size, min_score=min_score,
+        search=search, active_only=active_only,
+    )
 
 
 @router.get("/stats/summary")

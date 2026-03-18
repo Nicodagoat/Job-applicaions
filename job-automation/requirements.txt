@@ -6,21 +6,18 @@
 fastapi==0.115.6
 uvicorn[standard]==0.32.1
 
-# HTTP client / scraping
+# HTTP client (scrapers, API calls, job validation)
 requests==2.32.3
 beautifulsoup4==4.12.3
 lxml==5.3.0
 
-# Browser automation (form filling)
+# Browser automation (form auto-filling)
 playwright==1.49.0
 
-# AI — all optional, at least one needed
-# Option 1 (free, local): Ollama runs LLaMA on your machine — no package needed, just HTTP
-# Option 2 (free, cloud): Groq free API — pip install groq
+# AI — Groq client (free API, LLaMA 3.1 70B)
 groq==0.11.0
-
-# Option 3 (paid, optional): OpenAI
-# openai==1.57.4
+# Ollama: no package needed — uses plain HTTP requests
+# OpenAI (optional paid fallback): pip install openai
 
 # Data validation
 pydantic==2.10.3
@@ -31,10 +28,10 @@ pyyaml==6.0.2
 # Environment variables
 python-dotenv==1.0.1
 
-# Multipart form uploads (file upload API)
+# File upload support
 python-multipart==0.0.20
 
-# Scheduling (optional, for cron-style runs)
+# Scheduling (optional, for automated runs)
 apscheduler==3.10.4
 
 # Testing

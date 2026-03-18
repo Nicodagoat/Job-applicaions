@@ -1,134 +1,228 @@
 #!/usr/bin/env bash
 # ============================================================
-# Job Application Platform — One-Command Setup
+# Job Application Platform — Setup Script
+# Works on: Chromebook (Linux), macOS, Ubuntu/Debian, Windows WSL
 # ============================================================
-# Run this once to get everything ready:
-#   bash setup.sh
+# Run once:  bash setup.sh
+# Start app: bash start.sh
 # ============================================================
 
 set -e
-CYAN='\033[0;36m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
-print() { echo -e "${CYAN}▶ $1${NC}"; }
-ok()    { echo -e "${GREEN}✓ $1${NC}"; }
-warn()  { echo -e "${YELLOW}⚠ $1${NC}"; }
-fail()  { echo -e "${RED}✗ $1${NC}"; }
+# ── Colours ──────────────────────────────────────────────
+CYAN='\033[0;36m'; GREEN='\033[0;32m'
+YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
+print() { echo -e "${CYAN}▶  $1${NC}"; }
+ok()    { echo -e "${GREEN}✓  $1${NC}"; }
+warn()  { echo -e "${YELLOW}⚠  $1${NC}"; }
+fail()  { echo -e "${RED}✗  $1${NC}"; }
+hr()    { echo -e "${CYAN}────────────────────────────────────────${NC}"; }
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║   Job Application Automation Platform         ║${NC}"
-echo -e "${CYAN}║   Setup Wizard for Niccolò Andrea Nolli       ║${NC}"
+echo -e "${CYAN}║  Job Application Platform — Setup Wizard     ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ─── Python ────────────────────────────────────────────────
-print "Checking Python..."
-if ! command -v python3 &>/dev/null; then
-    fail "Python 3 not found. Please install from https://python.org"
+# ── Detect OS ──────────────────────────────────────────────
+OS="unknown"
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+fi
+IS_CHROMEBOOK=false
+if [ -d /usr/share/chromeos-assets ] || grep -q "chrome" /etc/os-release 2>/dev/null || [ -f /dev/.cros_milestone ]; then
+    IS_CHROMEBOOK=true
+fi
+IS_MAC=false
+[ "$(uname)" = "Darwin" ] && IS_MAC=true
+
+print "Detected OS: $(uname -s)$([ "$IS_CHROMEBOOK" = true ] && echo ' (ChromeOS Linux)')"
+
+# ── System dependencies (Chromebook / Debian / Ubuntu) ─────
+if [ "$IS_MAC" = false ] && [ "$IS_CHROMEBOOK" = true ] || [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ] || [ "$OS" = "linuxmint" ]; then
+    print "Installing system dependencies (sudo required)…"
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq \
+        python3 python3-pip python3-venv \
+        curl wget git \
+        libnss3 libatk1.0-0 libatk-bridge2.0-0 \
+        libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
+        libxdamage1 libxfixes3 libxrandr2 libgbm1 \
+        libasound2 libpango-1.0-0 libpangocairo-1.0-0 \
+        libgtk-3-0 libx11-xcb1 2>/dev/null || true
+    ok "System dependencies ready"
+fi
+
+# ── Python version check ────────────────────────────────────
+print "Checking Python version…"
+PY_CMD=""
+for cmd in python3.11 python3.10 python3.9 python3; do
+    if command -v "$cmd" &>/dev/null; then
+        PYVER=$($cmd -c "import sys; print(sys.version_info.minor)")
+        PYMAJ=$($cmd -c "import sys; print(sys.version_info.major)")
+        if [ "$PYMAJ" -ge 3 ] && [ "$PYVER" -ge 9 ]; then
+            PY_CMD=$cmd
+            break
+        fi
+    fi
+done
+
+if [ -z "$PY_CMD" ]; then
+    fail "Python 3.9 or higher is required."
+    if [ "$IS_CHROMEBOOK" = true ]; then
+        echo "  On Chromebook, run: sudo apt-get install python3.11"
+    elif [ "$IS_MAC" = true ]; then
+        echo "  On macOS, run: brew install python@3.11"
+    fi
     exit 1
 fi
-PYVER=$(python3 -c "import sys; print(sys.version_info.minor)")
-ok "Python 3.${PYVER} found"
+ok "Python found: $PY_CMD ($PYMAJ.$PYVER)"
 
-# ─── Virtual environment ───────────────────────────────────
+# ── Virtual environment ─────────────────────────────────────
 if [ ! -d ".venv" ]; then
-    print "Creating virtual environment..."
-    python3 -m venv .venv
-    ok "Virtual environment created"
+    print "Creating virtual environment…"
+    $PY_CMD -m venv .venv
+    ok "Virtual environment created (.venv/)"
 else
-    ok "Virtual environment already exists"
+    ok "Virtual environment exists (.venv/)"
 fi
 
-# Activate
 source .venv/bin/activate
-print "Installing Python dependencies..."
+
+# ── Python packages ─────────────────────────────────────────
+print "Installing Python packages (this takes ~1 minute)…"
+pip install -q --upgrade pip
 pip install -q -r requirements.txt
-ok "Dependencies installed"
+ok "Python packages installed"
 
-# ─── Playwright ────────────────────────────────────────────
-print "Installing Playwright browser (Chromium)..."
-playwright install chromium --with-deps 2>/dev/null || playwright install chromium
-ok "Playwright ready"
+# ── Playwright browser ──────────────────────────────────────
+print "Installing Playwright browser (Chromium)…"
+echo "  This downloads ~130MB on first run."
+if [ "$IS_CHROMEBOOK" = true ] || [ "$OS" = "debian" ] || [ "$OS" = "ubuntu" ]; then
+    # On Linux, install deps then browser
+    playwright install-deps chromium 2>/dev/null || true
+fi
+playwright install chromium
+ok "Playwright browser ready"
 
-# ─── Database ──────────────────────────────────────────────
-print "Initialising database..."
+# ── Database ────────────────────────────────────────────────
+print "Initialising database…"
 python run.py init-db
-ok "Database ready"
+ok "Database ready (database/jobs.db)"
 
-# ─── .env file ─────────────────────────────────────────────
+# ── Environment file ────────────────────────────────────────
 if [ ! -f "config/.env" ]; then
     cp config/.env.example config/.env
-    warn "config/.env created from template — you may want to add API keys"
+    warn "config/.env created — add your API keys to unlock all features"
 else
     ok "config/.env already exists"
 fi
 
-# ─── Document directories ──────────────────────────────────
-mkdir -p documents/resumes documents/cover_letters documents/certificates documents/other logs/screenshots
+# ── Storage directories ─────────────────────────────────────
+mkdir -p documents/resumes documents/cover_letters documents/certificates \
+         documents/other logs/screenshots
 ok "Storage directories ready"
 
-# ─── AI provider detection ─────────────────────────────────
+# ── Load .env for checks ────────────────────────────────────
+set -a; source config/.env 2>/dev/null; set +a
+
+# ── AI provider check ───────────────────────────────────────
+hr
 echo ""
-echo -e "${CYAN}── Checking AI providers ──────────────────────${NC}"
+echo -e "${CYAN}Checking AI providers…${NC}"
+echo ""
 
-# Load .env
-set -a; source config/.env; set +a
+OLLAMA_OK=false; GROQ_OK=false
 
-OLLAMA_OK=false
-GROQ_OK=false
-
-# Check Ollama
-if curl -s --connect-timeout 2 http://localhost:11434/api/tags &>/dev/null; then
-    MODELS=$(curl -s http://localhost:11434/api/tags | python3 -c "import sys,json; d=json.load(sys.stdin); print(','.join(m['name'] for m in d.get('models',[])))" 2>/dev/null)
-    if echo "$MODELS" | grep -q "llama3"; then
-        ok "Ollama running with LLaMA — AI is ready (FREE, local)"
+# Ollama
+if curl -sf --connect-timeout 2 http://localhost:11434/api/tags &>/dev/null; then
+    MODELS=$(curl -sf http://localhost:11434/api/tags 2>/dev/null | \
+             python3 -c "import sys,json; [print(m['name']) for m in json.load(sys.stdin).get('models',[])]" 2>/dev/null || echo "")
+    if echo "$MODELS" | grep -qi "llama\|mistral\|phi"; then
+        ok "Ollama running — $(echo "$MODELS" | head -1) available (FREE local AI)"
         OLLAMA_OK=true
     else
-        warn "Ollama is running but no LLaMA model found"
-        echo "  Run: ollama pull llama3.1"
+        warn "Ollama is running but no model found. Run: ollama pull llama3.1"
     fi
 else
-    warn "Ollama not running (optional — gives you free local AI)"
-    echo "  Install: https://ollama.com/download"
-    echo "  Then:    ollama pull llama3.1"
+    warn "Ollama not running (optional — gives you free private local AI)"
+    echo "     Install: https://ollama.com/download"
+    echo "     Then:    ollama pull llama3.1"
 fi
 
-# Check Groq
+echo ""
+
+# Groq
 if [ -n "$GROQ_API_KEY" ] && [ "$GROQ_API_KEY" != "gsk_..." ]; then
-    ok "Groq API key found — free cloud AI available"
+    ok "Groq API key found — LLaMA 3.1 70B available (FREE cloud AI)"
     GROQ_OK=true
 else
-    warn "No Groq API key (optional free cloud AI)"
-    echo "  Get a free key at: https://console.groq.com"
-    echo "  Then set GROQ_API_KEY in config/.env"
+    warn "No Groq API key set (optional free cloud AI — no local GPU needed)"
+    echo "     Get a free key at: https://console.groq.com"
+    echo "     Then add to config/.env: GROQ_API_KEY=gsk_..."
 fi
 
 if [ "$OLLAMA_OK" = false ] && [ "$GROQ_OK" = false ]; then
-    warn "No AI provider configured yet. Cover letter generation won't work until you set one up."
-    echo "  Easiest option: get a free Groq key at https://console.groq.com"
+    echo ""
+    warn "No AI provider yet — cover letter generation needs one."
+    echo "     Easiest option: sign up free at https://console.groq.com"
+    echo "     takes 2 minutes, completely free"
 fi
 
-# ─── Summary ───────────────────────────────────────────────
+# ── Job source check ─────────────────────────────────────────
+hr
+echo ""
+echo -e "${CYAN}Checking job sources…${NC}"
+echo ""
+
+ok "Arbeitnow  — ready (no key needed, EU+UK)"
+ok "Remotive   — ready (no key needed, remote roles)"
+
+if [ -n "$ADZUNA_APP_ID" ] && [ -n "$ADZUNA_APP_KEY" ]; then
+    ok "Adzuna     — ready (API key found, UK+EU comprehensive)"
+else
+    warn "Adzuna     — not configured (free key at developer.adzuna.com)"
+fi
+
+if [ -n "$REED_API_KEY" ]; then
+    ok "Reed       — ready (API key found, UK jobs)"
+else
+    warn "Reed       — not configured (free key at reed.co.uk/developers)"
+fi
+
+# ── Notifications check ──────────────────────────────────────
+echo ""
+if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+    ok "Telegram   — configured (you'll get phone notifications)"
+else
+    warn "Telegram   — not configured (optional but very useful for alerts)"
+    echo "     See config/.env.example for setup instructions"
+fi
+
+# ── Final summary ────────────────────────────────────────────
+hr
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   Setup Complete!                             ║${NC}"
+echo -e "${GREEN}║   Setup Complete! 🎉                          ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
-echo "  Next steps:"
+echo -e "  ${CYAN}To start the platform:${NC}"
 echo ""
-echo -e "  1. Start the platform:  ${CYAN}bash start.sh${NC}"
-echo -e "     (or separately:)"
-echo -e "     Backend:    ${CYAN}python run.py api${NC}"
-echo -e "     Dashboard:  open ${CYAN}frontend/index.html${NC} in your browser"
+echo -e "    ${GREEN}bash start.sh${NC}"
 echo ""
-echo -e "  2. Upload your CV in the dashboard → Documents tab"
+echo -e "  This will:"
+echo "    1. Start the backend API on http://localhost:8000"
+echo "    2. Open the dashboard in your browser"
 echo ""
-echo -e "  3. Run a dry-run scrape: ${CYAN}python run.py scrape${NC}"
-echo -e "     (then ${CYAN}python run.py scrape --live${NC} to save results)"
+echo -e "  ${CYAN}First things to do in the dashboard:${NC}"
+echo "    1. Go to 'My CVs' and upload your CV"
+echo "    2. Go to 'Scraper' and click 'Dry Run' to preview jobs"
+echo "    3. Click 'Live Run' to save jobs to your database"
+echo "    4. Go to 'Job Matches' and click 'Apply' on any role"
+echo "    5. Review the AI-generated cover letter and approve"
 echo ""
-echo -e "  4. Browse matches in the dashboard → click Apply → review letter"
-echo ""
-if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
-    warn "Telegram not configured — set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in config/.env"
-fi
+echo -e "  ${YELLOW}Want more job sources? Add free API keys to config/.env:${NC}"
+echo "    Adzuna: https://developer.adzuna.com/"
+echo "    Reed:   https://www.reed.co.uk/developers/jobseeker"
 echo ""

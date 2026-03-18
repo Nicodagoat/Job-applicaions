@@ -67,10 +67,15 @@ def list_jobs(
     min_score: float = 0,
     status_filter: Optional[str] = None,
     search: Optional[str] = None,
+    active_only: bool = True,
 ) -> dict:
     offset = (page - 1) * page_size
     conditions = ["match_score >= ?"]
     params: list = [min_score]
+
+    # By default only show jobs confirmed still open
+    if active_only:
+        conditions.append("(is_active = 1 OR is_active IS NULL)")
 
     if search:
         conditions.append("(job_title LIKE ? OR company LIKE ? OR description LIKE ?)")
