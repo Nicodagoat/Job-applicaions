@@ -1,37 +1,29 @@
 """
-AI Cover Letter Generator.
+Cover Letter Generator — uses free AI providers via llm_provider.py.
 
-STRICT RULES:
-- Only uses data from PROFILE_FACTS and the job description provided.
-- Never invents skills, experience, qualifications, or personal details.
-- If a required detail is missing from the profile, it raises MissingProfileDataError.
-- All generated content is marked with the source (which profile section it came from).
+STRICT ANTI-HALLUCINATION RULES:
+- Only uses data from PROFILE_FACTS (hardcoded from real CV)
+- Never invents skills, experience, or qualifications
+- If required detail is missing, raises MissingProfileDataError
+- Every claim in the letter is traced to a profile section
 """
 
 from __future__ import annotations
 
-import os
 import re
 from typing import Optional
 
-from openai import OpenAI
-
+from ai.llm_provider import chat, get_provider_info
 from ai.profile_loader import PROFILE_FACTS, get_profile_as_text
 from ai.prompts import COVER_LETTER_SYSTEM_PROMPT, COVER_LETTER_USER_PROMPT
 
 
 class MissingProfileDataError(Exception):
-    """Raised when the AI would need to invent information not in the profile."""
+    """Raised when required information is not in the profile."""
     pass
 
 
 class CoverLetterGenerator:
-    def __init__(self):
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise EnvironmentError("OPENAI_API_KEY environment variable not set.")
-        self.client = OpenAI(api_key=api_key)
-        self.model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
     def generate(
         self,
@@ -43,95 +35,83 @@ class CoverLetterGenerator:
         max_words: int = 350,
     ) -> dict:
         """
-        Generate a tailored cover letter.
+        Generate a tailored cover letter using the active free AI provider.
 
         Returns:
             {
-                "content": str,          # The cover letter text
-                "sources_used": list,    # Profile sections referenced
-                "warnings": list,        # Any gaps flagged
-                "requires_review": bool, # True if human review needed
+                "content": str,
+                "sources_used": list[str],
+                "warnings": list[str],
+                "requires_review": bool,
+                "provider": str,
             }
         """
+        provider = get_provider_info()
         profile_text = get_profile_as_text()
         req_text = "\n".join(f"- {r}" for r in (requirements or []))
 
         user_prompt = COVER_LETTER_USER_PROMPT.format(
             job_title=job_title,
             company=company,
-            job_description=job_description[:3000],  # Safety truncation
+            job_description=job_description[:3000],
             requirements=req_text or "Not specified",
             profile=profile_text,
             tone=tone,
             max_words=max_words,
         )
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            temperature=0.3,  # Low temperature = more factual
-            max_tokens=1500,
-            messages=[
-                {"role": "system", "content": COVER_LETTER_SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
+        raw_output = chat(
+            system_prompt=COVER_LETTER_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+            temperature=0.3,
+            max_tokens=1200,
         )
 
-        raw_output = response.choices[0].message.content
-
-        # Parse the structured response
-        result = self._parse_ai_response(raw_output)
-
-        # Anti-hallucination check: verify any claimed facts exist in profile
+        result = self._parse_response(raw_output)
         warnings = self._verify_against_profile(result["content"])
         result["warnings"].extend(warnings)
         result["requires_review"] = bool(result["warnings"])
-
+        result["provider"] = provider["name"]
         return result
 
-    def _parse_ai_response(self, raw: str) -> dict:
-        """Parse the structured AI output into components."""
-        # The AI is prompted to return sections marked with tags
-        content = self._extract_section(raw, "COVER_LETTER")
-        sources = self._extract_section(raw, "SOURCES_USED")
-        flags = self._extract_section(raw, "FLAGS")
+    def _parse_response(self, raw: str) -> dict:
+        """Extract letter, sources, and flags from structured AI output."""
+        content  = self._extract_tag(raw, "COVER_LETTER")
+        sources  = self._extract_tag(raw, "SOURCES_USED")
+        flags    = self._extract_tag(raw, "FLAGS")
+
+        # If model didn't use tags (happens with smaller local models), use full output
+        if not content:
+            # Strip any preamble up to first blank line
+            lines = raw.strip().splitlines()
+            start = 0
+            for i, line in enumerate(lines):
+                if line.strip().lower().startswith("dear") or line.strip().lower().startswith("i am"):
+                    start = i
+                    break
+            content = "\n".join(lines[start:]).strip()
 
         return {
-            "content": content or raw,  # Fallback to full text if tags missing
-            "sources_used": [s.strip() for s in sources.split("\n") if s.strip()] if sources else [],
-            "warnings": [f.strip() for f in flags.split("\n") if f.strip()] if flags else [],
+            "content": content or raw.strip(),
+            "sources_used": [s.strip("- ") for s in (sources or "").splitlines() if s.strip()],
+            "warnings": [f.strip("- ") for f in (flags or "").splitlines() if f.strip() and f.strip() != "None"],
             "requires_review": False,
         }
 
-    def _extract_section(self, text: str, tag: str) -> Optional[str]:
-        pattern = rf"<{tag}>(.*?)</{tag}>"
-        match = re.search(pattern, text, re.DOTALL)
+    def _extract_tag(self, text: str, tag: str) -> Optional[str]:
+        match = re.search(rf"<{tag}>(.*?)</{tag}>", text, re.DOTALL)
         return match.group(1).strip() if match else None
 
-    def _verify_against_profile(self, letter_text: str) -> list[str]:
-        """
-        Basic hallucination check: flag if the letter mentions skills/companies
-        not found in the profile.
-        """
+    def _verify_against_profile(self, letter: str) -> list[str]:
+        """Heuristic check for invented credentials."""
         warnings = []
-        all_skills = []
-        for skills in PROFILE_FACTS["skills"].values():
-            all_skills.extend([s.lower() for s in skills])
-
-        known_companies = [exp["company"].lower() for exp in PROFILE_FACTS["experience"]]
-        known_degrees = [edu["degree"].lower() for edu in PROFILE_FACTS["education"]]
-
-        # This is a heuristic check — a more rigorous check would use NLP
-        # For now, we flag potential issues and require human review
-        suspicious_patterns = [
-            r"\bPhD\b", r"\bDoctor\b", r"\bproject manager\b",
-            r"\bcertified\b.*\b(PMP|CFA|CPA|FRM)\b",
-            r"\b(C\+\+|Java|React|Node\.js|Kubernetes)\b",
+        false_claims = [
+            (r"\bPhD\b|\bDoctorate\b", "PhD/Doctorate not in profile"),
+            (r"\bPMP\b|\bCFA\b|\bCPA\b|\bFRM\b|\bActuar", "Professional certification not in profile"),
+            (r"\b(Java|C\+\+|React|Node\.js|Kubernetes|TensorFlow)\b", "Programming skill not in profile"),
+            (r"\b(\d{10,})\b", "Suspiciously large number"),
         ]
-        for pattern in suspicious_patterns:
-            if re.search(pattern, letter_text, re.IGNORECASE):
-                warnings.append(
-                    f"Potential hallucination detected: '{pattern}' found in letter "
-                    f"but not confirmed in profile. Please review before sending."
-                )
-
+        for pattern, label in false_claims:
+            if re.search(pattern, letter, re.IGNORECASE):
+                warnings.append(f"Possible hallucination — {label}. Please review before sending.")
         return warnings

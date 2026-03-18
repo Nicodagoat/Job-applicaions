@@ -14,8 +14,13 @@ lxml==5.3.0
 # Browser automation (form filling)
 playwright==1.49.0
 
-# AI
-openai==1.57.4
+# AI — all optional, at least one needed
+# Option 1 (free, local): Ollama runs LLaMA on your machine — no package needed, just HTTP
+# Option 2 (free, cloud): Groq free API — pip install groq
+groq==0.11.0
+
+# Option 3 (paid, optional): OpenAI
+# openai==1.57.4
 
 # Data validation
 pydantic==2.10.3
@@ -26,13 +31,12 @@ pyyaml==6.0.2
 # Environment variables
 python-dotenv==1.0.1
 
-# Multipart form uploads
+# Multipart form uploads (file upload API)
 python-multipart==0.0.20
 
-# Scheduling (optional)
+# Scheduling (optional, for cron-style runs)
 apscheduler==3.10.4
 
 # Testing
 pytest==8.3.4
-pytest-asyncio==0.24.0
-httpx==0.28.1  # For testing FastAPI endpoints
+httpx==0.28.1

@@ -1,21 +1,19 @@
 # ============================================================
 # SYSTEM SETTINGS
 # ============================================================
-# Do NOT commit API keys or passwords. Use .env file instead.
 
 app:
   name: "Job Application Automation Platform"
-  version: "1.0.0"
+  version: "1.1.0"
   debug: false
-  log_level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+  log_level: "INFO"
 
 # ============================================================
 # DATABASE
 # ============================================================
 database:
-  type: "sqlite"  # sqlite | postgresql
+  type: "sqlite"           # sqlite | postgresql
   sqlite_path: "database/jobs.db"
-  # For PostgreSQL, set env vars: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 # ============================================================
 # BACKEND API
@@ -26,6 +24,7 @@ backend:
   cors_origins:
     - "http://localhost:3000"
     - "http://127.0.0.1:3000"
+    - "null"               # Allows opening index.html directly from disk
 
 # ============================================================
 # SCRAPING
@@ -33,33 +32,34 @@ backend:
 scraping:
   headless: true
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-  request_delay_seconds: 3       # Polite delay between requests
+  request_delay_seconds: 3
   max_retries: 3
   timeout_seconds: 30
-  rate_limit_per_site:           # Max requests per minute per domain
+  rate_limit_per_site:
     default: 10
-    linkedin.com: 5              # Be extra careful with LinkedIn
+    linkedin.com: 5
     indeed.com: 10
     glassdoor.com: 8
   respect_robots_txt: true
 
 # ============================================================
-# AI
+# AI — provider is auto-detected (Ollama → Groq → OpenAI)
 # ============================================================
 ai:
-  provider: "openai"             # openai | anthropic | ollama (local)
-  model: "gpt-4o-mini"          # Cost-effective default
-  max_tokens: 2000
-  temperature: 0.3               # Low temperature for factual accuracy
-  hallucination_check: true      # Enable cross-checking against profile data
-  require_source_citation: true  # AI must cite which part of profile it used
+  # Ollama settings (free, local)
+  ollama_base_url: "http://localhost:11434"
+  ollama_model: "llama3.1"      # or "mistral", "llama3.2", "phi3"
+  # Groq model (free cloud)
+  groq_model: "llama-3.1-70b-versatile"
+  temperature: 0.3
+  hallucination_check: true
 
 # ============================================================
 # NOTIFICATIONS
 # ============================================================
 notifications:
   enabled: true
-  channel: "telegram"            # telegram | pushover | email
+  channel: "telegram"
   events:
     - "manual_input_required"
     - "application_submitted"
@@ -67,10 +67,10 @@ notifications:
     - "high_match_job_found"
     - "interview_invitation"
     - "rejection_received"
-  high_match_threshold: 80       # Notify if score >= this
+  high_match_threshold: 80
 
 # ============================================================
-# DOCUMENT MANAGEMENT
+# DOCUMENTS
 # ============================================================
 documents:
   storage_path: "documents"
@@ -83,21 +83,21 @@ documents:
   auto_select_best_resume: true
 
 # ============================================================
-# SCHEDULER
+# SCHEDULER (optional automated runs)
 # ============================================================
 scheduler:
-  enabled: false                 # Set to true to run on a schedule
-  scrape_interval_hours: 6       # How often to scrape for new jobs
-  report_time: "08:00"           # Daily summary notification time
+  enabled: false
+  scrape_interval_hours: 6
+  report_time: "08:00"
   timezone: "Europe/London"
 
 # ============================================================
-# SAFETY
+# SAFETY — keep these as-is until you're ready
 # ============================================================
 safety:
-  dry_run: true                  # Set to false to actually submit applications
+  dry_run: true                  # Change to false when ready to actually submit
   log_all_actions: true
   audit_trail: true
   max_daily_applications: 10
-  human_approval_required: true
-  block_reapplication_days: 30   # Don't reapply to same company within N days
+  human_approval_required: true  # Always confirm before submitting
+  block_reapplication_days: 30

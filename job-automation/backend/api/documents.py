@@ -53,6 +53,23 @@ async def upload_document(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/{doc_id}/set-default")
+def set_default_document(doc_id: int):
+    """Mark a document as the default for its type (clears previous default)."""
+    doc = get_document(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    from database.db import get_db
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE documents SET is_default=0 WHERE doc_type=? AND is_default=1",
+            (doc["doc_type"],),
+        )
+        conn.execute("UPDATE documents SET is_default=1 WHERE id=?", (doc_id,))
+        conn.commit()
+    return get_document(doc_id)
+
+
 @router.delete("/{doc_id}")
 def remove_document(doc_id: int):
     if not delete_document(doc_id):
