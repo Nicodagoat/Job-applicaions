@@ -1,0 +1,210 @@
+# ============================================================
+# USER PROFILE CONFIGURATION
+# ============================================================
+# This file is the primary configuration for job search targeting.
+# Edit this file to control what jobs the system looks for.
+# All fields are used by the matching engine and AI modules.
+
+personal:
+  name: "Niccolò Andrea Nolli"
+  email: "niccolonolli@gmail.com"
+  phone: "+39 3896940163"
+  linkedin: "https://www.linkedin.com/in/niccolo-andrea-nolli"
+  website: "https://niccolo-nolli.notion.site/Niccol-Andrea-Nolli-8f6a1c58fde348afb1f6884d62e0b098"
+  current_location: "Milan, Italy"
+  open_to_relocation: true
+  right_to_work:
+    - UK  # Has studied at SOAS, check visa status
+    - EU  # Italian citizen
+
+# ============================================================
+# JOB TARGETING
+# ============================================================
+job_titles:
+  primary:
+    - "Sustainability Specialist"
+    - "ESG Specialist"
+    - "Sustainability Consultant"
+    - "ESG Consultant"
+    - "Sustainability Policy Analyst"
+    - "Climate Policy Analyst"
+    - "Environmental Policy Analyst"
+  secondary:
+    - "Sustainability Manager"
+    - "ESG Analyst"
+    - "Climate Consultant"
+    - "Regulatory Affairs Specialist"
+    - "EU Policy Analyst"
+    - "Sustainability Reporting Analyst"
+    - "CSRD Specialist"
+    - "Corporate Sustainability Advisor"
+
+keywords:
+  must_include: []  # Jobs must contain at least one of these (empty = no filter)
+  preferred:
+    - "CSRD"
+    - "EU Taxonomy"
+    - "ESG"
+    - "sustainability"
+    - "climate"
+    - "environmental"
+    - "carbon"
+    - "GHG"
+    - "net zero"
+    - "green transition"
+    - "ESG reporting"
+    - "double materiality"
+    - "TCFD"
+    - "ISSB"
+    - "regulatory"
+    - "policy"
+  exclude:
+    - "sales target"
+    - "cold calling"
+    - "door to door"
+
+# ============================================================
+# GEOGRAPHY
+# ============================================================
+locations:
+  target_countries:
+    - "United Kingdom"
+    - "Germany"
+    - "Netherlands"
+    - "Belgium"
+    - "France"
+    - "Denmark"
+    - "Sweden"
+    - "Norway"
+    - "Austria"
+    - "Switzerland"
+    - "Ireland"
+    - "Luxembourg"
+    - "Spain"
+  target_cities:
+    - "London"
+    - "Brussels"
+    - "Amsterdam"
+    - "Berlin"
+    - "Paris"
+    - "Copenhagen"
+    - "Stockholm"
+    - "Dublin"
+    - "Geneva"
+    - "Vienna"
+  excluded_countries:
+    - "Italy"  # Explicitly excluded per user instructions
+  remote_acceptable: true
+  hybrid_acceptable: true
+  on_site_acceptable: true
+
+# ============================================================
+# SALARY
+# ============================================================
+salary:
+  currency_preference: "GBP"  # Primary
+  minimum_gbp: 35000
+  minimum_eur: 40000
+  negotiate: true
+
+# ============================================================
+# SENIORITY
+# ============================================================
+seniority:
+  target_levels:
+    - "Junior"
+    - "Mid-level"
+    - "Senior"
+  exclude_levels:
+    - "Director"
+    - "VP"
+    - "C-suite"
+    - "Partner"
+  years_of_experience: 4  # Approx years since 2022
+
+# ============================================================
+# INDUSTRIES (ranked by preference)
+# ============================================================
+industries:
+  priority:
+    - "Sustainability Consulting"
+    - "Climate Policy"
+    - "Environmental Regulation"
+    - "ESG Advisory"
+    - "Think Tanks / Policy Research"
+    - "International Organizations"
+    - "NGOs / Non-Profit"
+    - "EU Institutions"
+    - "Government / Public Sector"
+  acceptable:
+    - "Financial Services (ESG focus)"
+    - "Energy / Renewables"
+    - "Corporate Sustainability"
+    - "Management Consulting"
+    - "Law Firms (Sustainability)"
+  avoid:
+    - "Oil & Gas"
+    - "Coal"
+    - "Tobacco"
+    - "Weapons / Defence"
+    - "Fast Fashion"
+
+# ============================================================
+# COMPANIES
+# ============================================================
+companies:
+  prioritize:
+    - "Carbon Disclosure Project (CDP)"
+    - "Carbon Trust"
+    - "E3G"
+    - "Climate Bonds Initiative"
+    - "PRI"
+    - "Sustainalytics"
+    - "MSCI ESG"
+    - "ISS ESG"
+    - "Trucost"
+    - "South Pole"
+    - "ERM"
+    - "WSP"
+    - "Arup"
+    - "Deloitte Sustainability"
+    - "PwC Sustainability"
+    - "KPMG ESG"
+    - "EY Sustainability"
+    - "European Environment Agency"
+    - "UNEP"
+    - "World Bank"
+  avoid: []  # Add companies to avoid applying to
+
+# ============================================================
+# VISA / WORK AUTHORIZATION
+# ============================================================
+visa:
+  requires_sponsorship: true  # May need UK visa sponsorship
+  acceptable_visa_types:
+    - "Skilled Worker Visa UK"
+    - "EU Work Permit"
+    - "No visa required (EU)"
+
+# ============================================================
+# APPLICATION SETTINGS
+# ============================================================
+application:
+  auto_apply: false          # Set to true to apply without human approval
+  require_approval: true     # Always ask before submitting
+  max_applications_per_day: 10
+  min_match_score: 65        # Minimum score (0-100) to consider applying
+  auto_apply_threshold: 85   # Score above which auto-apply is triggered (if enabled)
+  cover_letter_required: true
+  custom_cover_letter: true  # Generate tailored cover letter per job
+
+# ============================================================
+# MATCHING ENGINE WEIGHTS
+# ============================================================
+matching_weights:
+  skill_match: 0.30
+  location_match: 0.20
+  seniority_match: 0.15
+  industry_relevance: 0.20
+  company_priority: 0.10
+  esg_relevance: 0.05

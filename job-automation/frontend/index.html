@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Application Platform — Niccolò Nolli</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2d3148;
+      --accent: #4f8ef7;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* Layout */
+    .sidebar { position: fixed; top: 0; left: 0; width: 220px; height: 100vh; background: var(--surface); border-right: 1px solid var(--border); padding: 20px 0; display: flex; flex-direction: column; }
+    .main { margin-left: 220px; padding: 24px; min-height: 100vh; }
+    .logo { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .logo h2 { font-size: 14px; font-weight: 700; color: var(--accent); }
+    .logo p { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; font-size: 14px; color: var(--text-muted); transition: all 0.15s; }
+    nav a:hover, nav a.active { background: rgba(79, 142, 247, 0.1); color: var(--text); border-right: 2px solid var(--accent); }
+
+    /* Cards */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .stat-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+    .stat-card .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Tables */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+    .card h3 { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 8px 12px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(45,49,72,0.5); vertical-align: middle; }
+    tr:hover td { background: rgba(79,142,247,0.04); }
+
+    /* Badges */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge-green { background: rgba(34,197,94,0.15); color: var(--accent-green); }
+    .badge-blue { background: rgba(79,142,247,0.15); color: var(--accent); }
+    .badge-amber { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+    .badge-red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+    .badge-gray { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+
+    /* Score bar */
+    .score-bar { display: flex; align-items: center; gap: 8px; }
+    .score-bar-track { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+    /* Buttons */
+    .btn { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: #3b78e7; }
+    .btn-success { background: var(--accent-green); color: white; }
+    .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Search */
+    .search-bar { display: flex; gap: 12px; margin-bottom: 16px; }
+    .search-bar input, .search-bar select { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+    .search-bar input { flex: 1; }
+    .search-bar input:focus, .search-bar select:focus { outline: none; border-color: var(--accent); }
+
+    /* Page sections */
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 20px; font-weight: 700; }
+    .page-header p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Loader */
+    .loading { text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Cover letter modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 700px; max-height: 80vh; display: flex; flex-direction: column; }
+    .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+    textarea.cover-letter { width: 100%; height: 300px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; line-height: 1.6; padding: 12px; resize: vertical; }
+    .warning-list { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px; font-size: 12px; }
+    .warning-list li { color: var(--accent-amber); margin-left: 16px; margin-top: 4px; }
+
+    /* Status badge helper */
+    .status-submitted { color: var(--accent-green); }
+    .status-pending { color: var(--accent-amber); }
+    .status-rejected { color: var(--accent-red); }
+    .status-interview { color: var(--accent); }
+
+    /* Notification banner */
+    .banner { position: fixed; top: 20px; right: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); z-index: 200; transform: translateX(300px); transition: transform 0.3s; max-width: 320px; }
+    .banner.show { transform: translateX(0); }
+    .banner.success { border-color: var(--accent-green); }
+    .banner.error { border-color: var(--accent-red); }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <h2>🎯 Job Platform</h2>
+    <p>Niccolò Andrea Nolli</p>
+  </div>
+  <nav>
+    <a href="#" class="active" onclick="showPage('dashboard', this)">📊 Dashboard</a>
+    <a href="#" onclick="showPage('jobs', this)">💼 Job Matches</a>
+    <a href="#" onclick="showPage('applications', this)">📋 Applications</a>
+    <a href="#" onclick="showPage('documents', this)">📁 Documents</a>
+    <a href="#" onclick="showPage('tasks', this)">✅ Tasks</a>
+    <a href="#" onclick="showPage('scraper', this)">🤖 Scraper</a>
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Dashboard -->
+  <section id="dashboard" class="page active">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p>Overview of your job search automation</p>
+    </div>
+    <div class="stat-grid" id="stats-grid">
+      <div class="loading"><span class="spinner"></span>Loading...</div>
+    </div>
+    <div class="card">
+      <h3>Recent High-Match Jobs</h3>
+      <div id="recent-jobs"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+  <!-- Job Matches -->
+  <section id="jobs" class="page">
+    <div class="page-header">
+      <h1>Job Matches</h1>
+      <p>Scored and ranked job opportunities</p>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="job-search" placeholder="Search jobs..." oninput="debounce(loadJobs, 400)()"/>
+      <select id="min-score" onchange="loadJobs()">
+        <option value="0">All scores</option>
+        <option value="50">50%+</option>
+        <option value="65" selected>65%+ (recommended)</option>
+        <option value="80">80%+ (high match)</option>
+      </select>
+      <button class="btn btn-primary" onclick="loadJobs()">Refresh</button>
+    </div>
+    <div class="card">
+      <div id="jobs-table"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+  <!-- Applications -->
+  <section id="applications" class="page">
+    <div class="page-header">
+      <h1>Applications</h1>
+      <p>Track all submitted and pending applications</p>
+    </div>
+    <div class="search-bar">
+      <select id="app-status-filter" onchange="loadApplications()">
+        <option value="">All statuses</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="submitted">Submitted</option>
+        <option value="interview_invited">Interview Invited</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="card">
+      <div id="apps-table"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+  <!-- Documents -->
+  <section id="documents" class="page">
+    <div class="page-header">
+      <h1>Documents</h1>
+      <p>Manage your CVs, cover letters, and certificates</p>
+    </div>
+    <div class="card">
+      <h3>Upload Document</h3>
+      <form id="upload-form" onsubmit="uploadDocument(event)" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">File</label>
+          <input type="file" id="doc-file" accept=".pdf,.docx,.doc,.txt" required style="color:var(--text)"/>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Type</label>
+          <select id="doc-type" required style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text)">
+            <option value="resume">Resume / CV</option>
+            <option value="cover_letter">Cover Letter</option>
+            <option value="certificate">Certificate</option>
+            <option value="transcript">Transcript</option>
+            <option value="portfolio">Portfolio</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">Version</label>
+          <input type="text" id="doc-version" placeholder="e.g. v2, ESG-focused" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);width:160px"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="doc-default"/>
+          <label style="font-size:13px">Set as default</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Stored Documents</h3>
+      <div id="docs-table"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+  <!-- Tasks -->
+  <section id="tasks" class="page">
+    <div class="page-header">
+      <h1>Pending Tasks</h1>
+      <p>Actions requiring your attention</p>
+    </div>
+    <div class="card">
+      <div id="tasks-table"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+  <!-- Scraper -->
+  <section id="scraper" class="page">
+    <div class="page-header">
+      <h1>Scraper Control</h1>
+      <p>Manually trigger job scraping and monitor run history</p>
+    </div>
+    <div class="card">
+      <h3>Run Scraper</h3>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+        Dry run will log what would be saved without writing to the database.
+      </p>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-primary" onclick="runScraper(true)">🔍 Dry Run</button>
+        <button class="btn btn-success" onclick="runScraper(false)">🚀 Live Run</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Scraping History</h3>
+      <div id="scraper-runs"><div class="loading"><span class="spinner"></span>Loading...</div></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Cover Letter Modal -->
+<div class="modal-overlay" id="cover-letter-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-job-title">Cover Letter</h3>
+      <button class="btn btn-ghost" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-warnings" style="display:none" class="warning-list">
+        <strong>⚠️ Review Required:</strong>
+        <ul id="modal-warning-list"></ul>
+      </div>
+      <textarea class="cover-letter" id="modal-content" placeholder="Generating cover letter..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" onclick="approveCoverLetter()">✓ Approve & Create Application</button>
+    </div>
+  </div>
+</div>
+
+<!-- Notification Banner -->
+<div class="banner" id="banner"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let currentJobId = null;
+let currentCoverLetter = null;
+
+// ──────────────────────────────────────────────
+// Navigation
+// ──────────────────────────────────────────────
+function showPage(id, link) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (link) link.classList.add('active');
+  loadPageData(id);
+}
+
+function loadPageData(id) {
+  if (id === 'dashboard') { loadStats(); loadRecentJobs(); }
+  if (id === 'jobs') loadJobs();
+  if (id === 'applications') loadApplications();
+  if (id === 'documents') loadDocuments();
+  if (id === 'tasks') loadTasks();
+  if (id === 'scraper') loadScraperRuns();
+}
+
+// ──────────────────────────────────────────────
+// API helpers
+// ──────────────────────────────────────────────
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+// ──────────────────────────────────────────────
+// Dashboard
+// ──────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const stats = await api('/api/jobs/stats/summary');
+    const apps = stats.applications || {};
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card">
+        <div class="label">Jobs Found</div>
+        <div class="value" style="color:var(--accent)">${stats.total_jobs_found}</div>
+        <div class="sub">${stats.high_match_jobs} high match</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Applied</div>
+        <div class="value" style="color:var(--accent-green)">${apps.submitted || 0}</div>
+        <div class="sub">${apps.acknowledged || 0} acknowledged</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Interviews</div>
+        <div class="value" style="color:#a78bfa">${apps.interview_invited || 0}</div>
+        <div class="sub">invited</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Pending Tasks</div>
+        <div class="value" style="color:var(--accent-amber)">${stats.pending_tasks}</div>
+        <div class="sub">need your action</div>
+      </div>
+    `;
+  } catch (e) {
+    document.getElementById('stats-grid').innerHTML = `<p style="color:var(--accent-red)">Failed to load stats: ${e.message}</p>`;
+  }
+}
+
+async function loadRecentJobs() {
+  try {
+    const data = await api('/api/jobs/?min_score=70&page_size=5');
+    if (!data.items.length) {
+      document.getElementById('recent-jobs').innerHTML = '<p style="color:var(--text-muted);font-size:13px">No jobs found yet. Run the scraper to discover opportunities.</p>';
+      return;
+    }
+    document.getElementById('recent-jobs').innerHTML = renderJobsTable(data.items, false);
+  } catch (e) {
+    document.getElementById('recent-jobs').innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+// ──────────────────────────────────────────────
+// Jobs
+// ──────────────────────────────────────────────
+async function loadJobs() {
+  const search = document.getElementById('job-search')?.value || '';
+  const minScore = document.getElementById('min-score')?.value || 65;
+  const el = document.getElementById('jobs-table');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+  try {
+    const params = new URLSearchParams({ page_size: 50, min_score: minScore });
+    if (search) params.append('search', search);
+    const data = await api(`/api/jobs/?${params}`);
+    el.innerHTML = data.items.length ? renderJobsTable(data.items, true) :
+      '<p style="color:var(--text-muted);font-size:13px;padding:20px">No jobs found matching your filters.</p>';
+  } catch (e) {
+    el.innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+function renderJobsTable(jobs, showActions) {
+  return `
+    <table>
+      <thead><tr>
+        <th>Job Title</th><th>Company</th><th>Location</th><th>Source</th>
+        <th>Match Score</th><th>ESG</th>${showActions ? '<th>Actions</th>' : ''}
+      </tr></thead>
+      <tbody>${jobs.map(j => `
+        <tr>
+          <td><a href="${j.source_url || '#'}" target="_blank">${j.job_title}</a></td>
+          <td>${j.company}</td>
+          <td>${j.location || j.country || '—'} ${j.remote ? '<span class="badge badge-blue">Remote</span>' : ''}</td>
+          <td><span class="badge badge-gray">${j.source}</span></td>
+          <td>
+            <div class="score-bar">
+              <div class="score-bar-track"><div class="score-bar-fill" style="width:${j.match_score}%;background:${scoreColor(j.match_score)}"></div></div>
+              <span style="font-size:12px;min-width:32px">${Math.round(j.match_score)}%</span>
+            </div>
+          </td>
+          <td>${j.esg_relevant ? '<span class="badge badge-green">ESG</span>' : '—'}</td>
+          ${showActions ? `<td><button class="btn btn-primary" onclick="openCoverLetter(${j.id},'${esc(j.job_title)} @ ${esc(j.company)}')">✍ Apply</button></td>` : ''}
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function scoreColor(score) {
+  if (score >= 80) return 'var(--accent-green)';
+  if (score >= 65) return 'var(--accent)';
+  if (score >= 50) return 'var(--accent-amber)';
+  return 'var(--accent-red)';
+}
+
+// ──────────────────────────────────────────────
+// Applications
+// ──────────────────────────────────────────────
+async function loadApplications() {
+  const status = document.getElementById('app-status-filter')?.value || '';
+  const el = document.getElementById('apps-table');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+  try {
+    const params = new URLSearchParams({ page_size: 50 });
+    if (status) params.append('status', status);
+    const data = await api(`/api/jobs/applications/?${params}`);
+    if (!data.items.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:20px">No applications yet.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Job Title</th><th>Company</th><th>Status</th><th>Applied</th><th>Next Action</th><th>Actions</th></tr></thead>
+        <tbody>${data.items.map(a => `
+          <tr>
+            <td>${a.job_title || '—'}</td>
+            <td>${a.company || '—'}</td>
+            <td><span class="badge ${statusBadge(a.application_status)}">${a.application_status}</span></td>
+            <td>${a.date_applied ? a.date_applied.slice(0,10) : '—'}</td>
+            <td style="font-size:12px;color:var(--text-muted)">${a.next_action_required || '—'}</td>
+            <td>
+              ${!a.human_approved ? `<button class="btn btn-success" onclick="approveApp(${a.id})" style="font-size:11px">Approve</button>` : ''}
+              <button class="btn btn-ghost" onclick="updateStatus(${a.id})" style="font-size:11px;margin-left:4px">Update</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (e) {
+    el.innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+function statusBadge(s) {
+  return {submitted:'badge-green', pending:'badge-amber', rejected:'badge-red',
+          interview_invited:'badge-blue', approved:'badge-green'}[s] || 'badge-gray';
+}
+
+async function approveApp(id) {
+  try {
+    await api(`/api/jobs/applications/${id}/approve`, { method: 'POST' });
+    showBanner('Application approved!', 'success');
+    loadApplications();
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+async function updateStatus(id) {
+  const status = prompt('Enter new status (pending/submitted/acknowledged/interview_invited/rejected/withdrawn):');
+  if (!status) return;
+  try {
+    await api(`/api/jobs/applications/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ application_status: status }),
+    });
+    showBanner('Status updated', 'success');
+    loadApplications();
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Documents
+// ──────────────────────────────────────────────
+async function loadDocuments() {
+  const el = document.getElementById('docs-table');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+  try {
+    const docs = await api('/api/documents/');
+    if (!docs.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:20px">No documents uploaded yet.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>File</th><th>Type</th><th>Version</th><th>Default</th><th>Uploaded</th><th>Actions</th></tr></thead>
+        <tbody>${docs.map(d => `
+          <tr>
+            <td>${d.file_name}</td>
+            <td><span class="badge badge-blue">${d.doc_type}</span></td>
+            <td>${d.version || '—'}</td>
+            <td>${d.is_default ? '<span class="badge badge-green">✓ Default</span>' : '—'}</td>
+            <td>${d.created_at ? d.created_at.slice(0,10) : '—'}</td>
+            <td><button class="btn btn-ghost" onclick="deleteDoc(${d.id})" style="font-size:11px;color:var(--accent-red)">Delete</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (e) {
+    el.innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+async function uploadDocument(e) {
+  e.preventDefault();
+  const form = new FormData();
+  form.append('file', document.getElementById('doc-file').files[0]);
+  form.append('doc_type', document.getElementById('doc-type').value);
+  form.append('version', document.getElementById('doc-version').value);
+  form.append('is_default', document.getElementById('doc-default').checked);
+  try {
+    const res = await fetch(`${API}/api/documents/upload`, { method: 'POST', body: form });
+    if (!res.ok) throw new Error(await res.text());
+    showBanner('Document uploaded!', 'success');
+    loadDocuments();
+    e.target.reset();
+  } catch(e) { showBanner(`Upload failed: ${e.message}`, 'error'); }
+}
+
+async function deleteDoc(id) {
+  if (!confirm('Delete this document?')) return;
+  try {
+    await api(`/api/documents/${id}`, { method: 'DELETE' });
+    showBanner('Document deleted', 'success');
+    loadDocuments();
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Tasks
+// ──────────────────────────────────────────────
+async function loadTasks() {
+  const el = document.getElementById('tasks-table');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>Loading...</div>';
+  try {
+    const tasks = await api('/api/scraper/tasks');
+    if (!tasks.length) {
+      el.innerHTML = '<p style="color:var(--accent-green);font-size:13px;padding:20px">✓ No pending tasks. You\'re all caught up!</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Title</th><th>Job</th><th>Priority</th><th>Description</th><th>Actions</th></tr></thead>
+        <tbody>${tasks.map(t => `
+          <tr>
+            <td>${t.title}</td>
+            <td>${t.job_title ? `${t.job_title} @ ${t.company}` : '—'}</td>
+            <td><span class="badge ${t.priority==='high'?'badge-red':'badge-amber'}">${t.priority}</span></td>
+            <td style="font-size:12px;color:var(--text-muted);max-width:300px">${t.description || '—'}</td>
+            <td><button class="btn btn-success" onclick="completeTask(${t.id})" style="font-size:11px">✓ Done</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (e) {
+    el.innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+async function completeTask(id) {
+  try {
+    await api(`/api/scraper/tasks/${id}/complete`, { method: 'PATCH' });
+    showBanner('Task marked complete', 'success');
+    loadTasks();
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Scraper
+// ──────────────────────────────────────────────
+async function loadScraperRuns() {
+  const el = document.getElementById('scraper-runs');
+  try {
+    const runs = await api('/api/scraper/runs');
+    if (!runs.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:20px">No scraping runs yet.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <table>
+        <thead><tr><th>Source</th><th>Started</th><th>Status</th><th>Found</th><th>New</th></tr></thead>
+        <tbody>${runs.map(r => `
+          <tr>
+            <td>${r.source}</td>
+            <td>${r.started_at ? r.started_at.slice(0,19).replace('T',' ') : '—'}</td>
+            <td><span class="badge ${r.status==='completed'?'badge-green':r.status==='failed'?'badge-red':'badge-amber'}">${r.status}</span></td>
+            <td>${r.jobs_found}</td>
+            <td>${r.jobs_new}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch(e) {
+    el.innerHTML = `<p style="color:var(--accent-red)">Error: ${e.message}</p>`;
+  }
+}
+
+async function runScraper(dryRun) {
+  try {
+    const result = await api(`/api/scraper/run?dry_run=${dryRun}`, { method: 'POST' });
+    showBanner(`${dryRun ? 'Dry run' : 'Live run'} started! Check the history below.`, 'success');
+    setTimeout(loadScraperRuns, 2000);
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Cover Letter
+// ──────────────────────────────────────────────
+async function openCoverLetter(jobId, label) {
+  currentJobId = jobId;
+  document.getElementById('modal-job-title').textContent = label;
+  document.getElementById('modal-content').value = 'Generating cover letter with AI...';
+  document.getElementById('modal-warnings').style.display = 'none';
+  document.getElementById('cover-letter-modal').classList.add('open');
+
+  try {
+    const result = await api(`/api/jobs/${jobId}/cover-letter`, {
+      method: 'POST',
+      body: JSON.stringify({ tone: 'professional', max_words: 350 }),
+    });
+    currentCoverLetter = result;
+    document.getElementById('modal-content').value = result.content;
+    if (result.warnings && result.warnings.length) {
+      document.getElementById('modal-warnings').style.display = 'block';
+      document.getElementById('modal-warning-list').innerHTML =
+        result.warnings.map(w => `<li>${w}</li>`).join('');
+    }
+  } catch(e) {
+    document.getElementById('modal-content').value = `Error generating cover letter: ${e.message}`;
+  }
+}
+
+function closeModal() {
+  document.getElementById('cover-letter-modal').classList.remove('open');
+  currentJobId = null; currentCoverLetter = null;
+}
+
+async function approveCoverLetter() {
+  if (!currentJobId) return;
+  try {
+    await api(`/api/jobs/${currentJobId}/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ job_id: currentJobId, notes: 'Created from dashboard' }),
+    });
+    showBanner('Application created and pending your approval!', 'success');
+    closeModal();
+    showPage('applications', null);
+  } catch(e) { showBanner(`Error: ${e.message}`, 'error'); }
+}
+
+// ──────────────────────────────────────────────
+// Utilities
+// ──────────────────────────────────────────────
+function showBanner(msg, type = 'success') {
+  const el = document.getElementById('banner');
+  el.textContent = msg;
+  el.className = `banner ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function esc(str) {
+  return (str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+let _debounceTimer;
+function debounce(fn, delay) {
+  return (...args) => {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(() => fn(...args), delay);
+  };
+}
+
+// Initial load
+loadStats();
+loadRecentJobs();
+</script>
+</body>
+</html>

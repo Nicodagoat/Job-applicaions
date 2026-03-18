@@ -1,0 +1,103 @@
+# ============================================================
+# SYSTEM SETTINGS
+# ============================================================
+# Do NOT commit API keys or passwords. Use .env file instead.
+
+app:
+  name: "Job Application Automation Platform"
+  version: "1.0.0"
+  debug: false
+  log_level: "INFO"  # DEBUG | INFO | WARNING | ERROR
+
+# ============================================================
+# DATABASE
+# ============================================================
+database:
+  type: "sqlite"  # sqlite | postgresql
+  sqlite_path: "database/jobs.db"
+  # For PostgreSQL, set env vars: DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+
+# ============================================================
+# BACKEND API
+# ============================================================
+backend:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+
+# ============================================================
+# SCRAPING
+# ============================================================
+scraping:
+  headless: true
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  request_delay_seconds: 3       # Polite delay between requests
+  max_retries: 3
+  timeout_seconds: 30
+  rate_limit_per_site:           # Max requests per minute per domain
+    default: 10
+    linkedin.com: 5              # Be extra careful with LinkedIn
+    indeed.com: 10
+    glassdoor.com: 8
+  respect_robots_txt: true
+
+# ============================================================
+# AI
+# ============================================================
+ai:
+  provider: "openai"             # openai | anthropic | ollama (local)
+  model: "gpt-4o-mini"          # Cost-effective default
+  max_tokens: 2000
+  temperature: 0.3               # Low temperature for factual accuracy
+  hallucination_check: true      # Enable cross-checking against profile data
+  require_source_citation: true  # AI must cite which part of profile it used
+
+# ============================================================
+# NOTIFICATIONS
+# ============================================================
+notifications:
+  enabled: true
+  channel: "telegram"            # telegram | pushover | email
+  events:
+    - "manual_input_required"
+    - "application_submitted"
+    - "application_failed"
+    - "high_match_job_found"
+    - "interview_invitation"
+    - "rejection_received"
+  high_match_threshold: 80       # Notify if score >= this
+
+# ============================================================
+# DOCUMENT MANAGEMENT
+# ============================================================
+documents:
+  storage_path: "documents"
+  max_file_size_mb: 10
+  allowed_extensions:
+    - ".pdf"
+    - ".docx"
+    - ".doc"
+    - ".txt"
+  auto_select_best_resume: true
+
+# ============================================================
+# SCHEDULER
+# ============================================================
+scheduler:
+  enabled: false                 # Set to true to run on a schedule
+  scrape_interval_hours: 6       # How often to scrape for new jobs
+  report_time: "08:00"           # Daily summary notification time
+  timezone: "Europe/London"
+
+# ============================================================
+# SAFETY
+# ============================================================
+safety:
+  dry_run: true                  # Set to false to actually submit applications
+  log_all_actions: true
+  audit_trail: true
+  max_daily_applications: 10
+  human_approval_required: true
+  block_reapplication_days: 30   # Don't reapply to same company within N days

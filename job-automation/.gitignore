@@ -1,0 +1,49 @@
+# Environment
+config/.env
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Database
+database/*.db
+database/*.db-wal
+database/*.db-shm
+
+# Logs
+logs/*.log
+logs/screenshots/
+
+# Documents (user data — not committed)
+documents/resumes/
+documents/cover_letters/
+documents/certificates/
+documents/other/
+
+# Node (if frontend expanded)
+node_modules/
+.next/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright
+playwright/.local-chromium/
