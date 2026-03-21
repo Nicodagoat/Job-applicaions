@@ -1,19 +1,15 @@
 """
-Unified LLM provider — supports free AI options first.
+Unified LLM provider — auto-detects the best available AI.
 
-Priority order (auto-detected):
-  1. Ollama  — local LLaMA, completely free, runs on your machine
-  2. Groq    — free API tier, LLaMA 3.1 70B (fast and capable)
-  3. OpenAI  — optional paid fallback
+Priority order (cloud-first, no local hardware needed):
+  1. DeepSeek — very cheap cloud API, excellent quality (set DEEPSEEK_API_KEY)
+  2. Groq     — free cloud API tier, LLaMA 3.1 70B (set GROQ_API_KEY)
+  3. OpenAI   — optional paid fallback (set OPENAI_API_KEY)
+  4. Ollama   — local LLaMA, runs on your machine (optional, needs GPU/RAM)
 
-To use Ollama (recommended, fully free):
-  1. Install: https://ollama.com/download
-  2. Run:     ollama pull llama3.1
-  3. Start:   ollama serve   (or it starts automatically)
-
-To use Groq (free cloud, no local GPU needed):
-  1. Sign up at https://console.groq.com  (free)
-  2. Get API key → set GROQ_API_KEY in config/.env
+Recommended: Sign up at https://platform.deepseek.com (cheapest option)
+or https://console.groq.com (completely free tier)
+Then add the API key in the Settings page — no terminal needed.
 """
 
 from __future__ import annotations
@@ -32,24 +28,18 @@ logger = logging.getLogger(__name__)
 # Provider detection                                                           #
 # --------------------------------------------------------------------------- #
 
-OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL    = os.environ.get("OLLAMA_MODEL", "llama3.1")  # or "mistral", "llama3.2"
+OLLAMA_BASE_URL  = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL     = os.environ.get("OLLAMA_MODEL", "llama3.1")
 
-GROQ_API_URL    = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL      = "llama-3.1-70b-versatile"   # Free tier — very capable
+GROQ_API_URL     = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL       = "llama-3.1-70b-versatile"
+
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
+DEEPSEEK_MODEL   = "deepseek-chat"
 
 
-def _ollama_available() -> bool:
-    """Return True if Ollama is running and the model is available."""
-    try:
-        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=2)
-        if r.status_code == 200:
-            models = [m["name"] for m in r.json().get("models", [])]
-            # Accept partial name match (llama3.1 matches llama3.1:latest etc.)
-            return any(OLLAMA_MODEL.split(":")[0] in m for m in models)
-    except Exception:
-        pass
-    return False
+def _deepseek_available() -> bool:
+    return bool(os.environ.get("DEEPSEEK_API_KEY"))
 
 
 def _groq_available() -> bool:
@@ -60,14 +50,28 @@ def _openai_available() -> bool:
     return bool(os.environ.get("OPENAI_API_KEY"))
 
 
+def _ollama_available() -> bool:
+    """Return True if Ollama is running and the model is available."""
+    try:
+        r = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=2)
+        if r.status_code == 200:
+            models = [m["name"] for m in r.json().get("models", [])]
+            return any(OLLAMA_MODEL.split(":")[0] in m for m in models)
+    except Exception:
+        pass
+    return False
+
+
 def get_provider_info() -> dict:
     """Return which AI provider is active and its details."""
-    if _ollama_available():
-        return {"name": "Ollama (local)", "model": OLLAMA_MODEL, "free": True, "local": True}
+    if _deepseek_available():
+        return {"name": "DeepSeek", "model": DEEPSEEK_MODEL, "free": False, "local": False}
     if _groq_available():
         return {"name": "Groq", "model": GROQ_MODEL, "free": True, "local": False}
     if _openai_available():
         return {"name": "OpenAI", "model": "gpt-4o-mini", "free": False, "local": False}
+    if _ollama_available():
+        return {"name": "Ollama (local)", "model": OLLAMA_MODEL, "free": True, "local": True}
     return {"name": "none", "model": None, "free": False, "local": False}
 
 
@@ -87,19 +91,18 @@ def chat(
     Returns the response text.
     Raises RuntimeError if no provider is configured.
     """
-    if _ollama_available():
-        return _ollama_chat(system_prompt, user_prompt, temperature, max_tokens, expect_json)
+    if _deepseek_available():
+        return _deepseek_chat(system_prompt, user_prompt, temperature, max_tokens, expect_json)
     if _groq_available():
         return _groq_chat(system_prompt, user_prompt, temperature, max_tokens, expect_json)
     if _openai_available():
         return _openai_chat(system_prompt, user_prompt, temperature, max_tokens, expect_json)
+    if _ollama_available():
+        return _ollama_chat(system_prompt, user_prompt, temperature, max_tokens, expect_json)
 
     raise RuntimeError(
-        "No AI provider configured.\n"
-        "Option 1 (free, local): Install Ollama → https://ollama.com/download\n"
-        "  then run: ollama pull llama3.1 && ollama serve\n"
-        "Option 2 (free, cloud): Get a free Groq key at https://console.groq.com\n"
-        "  then set GROQ_API_KEY in config/.env"
+        "No AI provider configured. "
+        "Go to Settings in the dashboard and add a free Groq key or a DeepSeek key."
     )
 
 
@@ -140,6 +143,42 @@ def _ollama_chat(
     except requests.RequestException as e:
         logger.error(f"[Ollama] Request failed: {e}")
         raise RuntimeError(f"Ollama error: {e}")
+
+
+# --------------------------------------------------------------------------- #
+# DeepSeek (very affordable cloud API, OpenAI-compatible)                     #
+# --------------------------------------------------------------------------- #
+
+def _deepseek_chat(
+    system_prompt: str,
+    user_prompt: str,
+    temperature: float,
+    max_tokens: int,
+    expect_json: bool,
+) -> str:
+    headers = {
+        "Authorization": f"Bearer {os.environ['DEEPSEEK_API_KEY']}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": DEEPSEEK_MODEL,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_prompt},
+        ],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    if expect_json:
+        payload["response_format"] = {"type": "json_object"}
+
+    try:
+        response = requests.post(DEEPSEEK_API_URL, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+    except requests.RequestException as e:
+        logger.error(f"[DeepSeek] Request failed: {e}")
+        raise RuntimeError(f"DeepSeek error: {e}")
 
 
 # --------------------------------------------------------------------------- #

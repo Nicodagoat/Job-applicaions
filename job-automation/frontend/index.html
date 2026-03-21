@@ -140,6 +140,37 @@
     .toast.success{border-color:var(--green)}
     .toast.error{border-color:var(--red)}
     .toast.warn{border-color:var(--amber)}
+
+    /* ── Settings page ── */
+    .settings-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+    .settings-section h3{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .settings-section .section-desc{font-size:12px;color:var(--muted);margin-bottom:18px}
+    .settings-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:16px}
+    .input-row{display:flex;gap:8px;align-items:flex-end}
+    .input-row input{flex:1}
+    .conn-status{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:6px;display:none}
+    .conn-status.ok{display:block;background:rgba(34,197,94,.1);color:var(--green)}
+    .conn-status.fail{display:block;background:rgba(239,68,68,.1);color:var(--red)}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(45,49,72,.4)}
+    .toggle-row:last-child{border-bottom:none}
+    .toggle-row label{font-size:13px}
+    .toggle-row .toggle-desc{font-size:11px;color:var(--muted);margin-top:2px}
+    .toggle{position:relative;display:inline-block;width:40px;height:22px}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:11px;transition:.2s}
+    .toggle-slider:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+    input:checked+.toggle-slider{background:var(--accent)}
+    input:checked+.toggle-slider:before{transform:translateX(18px)}
+    .number-input{display:flex;align-items:center;gap:8px}
+    .number-input input{width:80px}
+    .provider-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+    .provider-card{background:var(--surface2);border:2px solid var(--border);border-radius:8px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+    .provider-card:hover{border-color:var(--accent)}
+    .provider-card.active{border-color:var(--accent);background:rgba(79,142,247,.08)}
+    .provider-card .pc-name{font-size:13px;font-weight:600;margin-bottom:4px}
+    .provider-card .pc-desc{font-size:11px;color:var(--muted)}
+    .provider-card .pc-badge{position:absolute;top:8px;right:8px}
+    .save-row{display:flex;justify-content:flex-end;gap:8px;padding-top:6px}
   </style>
 </head>
 <body>
@@ -157,6 +188,7 @@
     <a href="#" onclick="nav('cvs',this)"><span class="icon">📄</span><span class="nav-label">My CVs</span></a>
     <a href="#" onclick="nav('tasks',this)"><span class="icon">✅</span><span class="nav-label">Tasks</span></a>
     <a href="#" onclick="nav('scraper',this)"><span class="icon">🤖</span><span class="nav-label">Scraper</span></a>
+    <a href="#" onclick="nav('settings',this)"><span class="icon">⚙️</span><span class="nav-label">Settings</span></a>
   </nav>
   <div class="sidebar-footer">
     <div style="margin-bottom:4px">AI Provider</div>
@@ -298,6 +330,220 @@
     <div class="card"><div id="tasks-table"><div class="loading"><span class="spin"></span>Loading…</div></div></div>
   </section>
 
+  <!-- ── Settings ── -->
+  <section id="settings" class="page">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p>Configure everything here — no terminal needed</p>
+    </div>
+
+    <!-- AI Provider -->
+    <div class="settings-section">
+      <h3>🤖 AI Provider <span id="ai-provider-badge" class="badge b-gray" style="font-weight:400"></span></h3>
+      <p class="section-desc">The AI writes tailored cover letters for each job. Pick any one provider — all options work well.</p>
+      <div class="provider-cards">
+        <div class="provider-card" onclick="selectProvider('deepseek')" id="pc-deepseek">
+          <div class="pc-badge"><span class="badge b-amber">Recommended</span></div>
+          <div class="pc-name">DeepSeek</div>
+          <div class="pc-desc">Cloud AI · ~$0.001/letter · Excellent quality</div>
+        </div>
+        <div class="provider-card" onclick="selectProvider('groq')" id="pc-groq">
+          <div class="pc-badge"><span class="badge b-green">Free</span></div>
+          <div class="pc-name">Groq</div>
+          <div class="pc-desc">Free cloud API · LLaMA 3.1 70B</div>
+        </div>
+        <div class="provider-card" onclick="selectProvider('openai')" id="pc-openai">
+          <div class="pc-name">OpenAI</div>
+          <div class="pc-desc">GPT-4o mini · Paid per request</div>
+        </div>
+      </div>
+      <div class="settings-grid" id="ai-key-fields">
+        <div id="ai-deepseek-field" class="field" style="display:none">
+          <label class="field-label">DeepSeek API Key</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">
+            Get a free key at <a href="https://platform.deepseek.com" target="_blank">platform.deepseek.com</a>
+          </div>
+          <div class="input-row">
+            <input type="password" id="deepseek-key" placeholder="sk-..." autocomplete="off"/>
+          </div>
+        </div>
+        <div id="ai-groq-field" class="field" style="display:none">
+          <label class="field-label">Groq API Key</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">
+            Get a free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+          </div>
+          <div class="input-row">
+            <input type="password" id="groq-key" placeholder="gsk_..." autocomplete="off"/>
+          </div>
+        </div>
+        <div id="ai-openai-field" class="field" style="display:none">
+          <label class="field-label">OpenAI API Key</label>
+          <div class="input-row">
+            <input type="password" id="openai-key" placeholder="sk-..." autocomplete="off"/>
+          </div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-ghost" onclick="testAI()">🧪 Test connection</button>
+        <button class="btn btn-primary" onclick="saveAI()">Save AI settings</button>
+      </div>
+      <div class="conn-status" id="ai-status"></div>
+    </div>
+
+    <!-- LinkedIn -->
+    <div class="settings-section">
+      <h3>🔗 LinkedIn Account <span id="linkedin-badge" class="badge b-gray" style="font-weight:400"></span></h3>
+      <p class="section-desc">Connect your LinkedIn account so the platform can auto-fill Easy Apply forms on your behalf.</p>
+      <div class="settings-grid">
+        <div class="field">
+          <label class="field-label">LinkedIn Email</label>
+          <input type="email" id="linkedin-email" placeholder="your@email.com" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label class="field-label">LinkedIn Password</label>
+          <input type="password" id="linkedin-password" placeholder="Your password" autocomplete="new-password"/>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-ghost" onclick="testLinkedIn()">🧪 Verify credentials</button>
+        <button class="btn btn-primary" onclick="saveLinkedIn()">Save LinkedIn</button>
+      </div>
+      <div class="conn-status" id="linkedin-status"></div>
+    </div>
+
+    <!-- ProtonMail -->
+    <div class="settings-section">
+      <h3>✉️ ProtonMail Account <span id="proton-badge" class="badge b-gray" style="font-weight:400"></span></h3>
+      <p class="section-desc">Some jobs ask you to send a CV + cover letter by email. The platform will send these from your ProtonMail account automatically.</p>
+      <div class="settings-grid">
+        <div class="field">
+          <label class="field-label">ProtonMail Address</label>
+          <input type="email" id="proton-email" placeholder="you@proton.me" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label class="field-label">ProtonMail Password</label>
+          <input type="password" id="proton-password" placeholder="Your password" autocomplete="new-password"/>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-ghost" onclick="testProtonMail()">🧪 Verify credentials</button>
+        <button class="btn btn-primary" onclick="saveProtonMail()">Save ProtonMail</button>
+      </div>
+      <div class="conn-status" id="proton-status"></div>
+    </div>
+
+    <!-- Job Sources -->
+    <div class="settings-section">
+      <h3>🌐 Job Sources</h3>
+      <p class="section-desc">Free API keys to unlock more job listings. Arbeitnow and Remotive work with no keys at all — add these for even more results.</p>
+      <div class="alert alert-success" style="margin-bottom:16px">
+        ✓ <strong>Arbeitnow</strong> and <strong>Remotive</strong> are already active — no setup needed!
+      </div>
+      <div class="settings-grid">
+        <div>
+          <div class="field">
+            <label class="field-label">Adzuna App ID</label>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">
+              Register free at <a href="https://developer.adzuna.com" target="_blank">developer.adzuna.com</a>
+            </div>
+            <input type="text" id="adzuna-id" placeholder="App ID" autocomplete="off"/>
+          </div>
+          <div class="field">
+            <label class="field-label">Adzuna App Key</label>
+            <input type="password" id="adzuna-key" placeholder="App Key" autocomplete="off"/>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="testAdzuna()">🧪 Test Adzuna</button>
+          <div class="conn-status" id="adzuna-status"></div>
+        </div>
+        <div>
+          <div class="field">
+            <label class="field-label">Reed API Key</label>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px">
+              Register free at <a href="https://www.reed.co.uk/developers/jobseeker" target="_blank">reed.co.uk/developers</a>
+            </div>
+            <input type="password" id="reed-key" placeholder="API Key" autocomplete="off"/>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="testReed()">🧪 Test Reed</button>
+          <div class="conn-status" id="reed-status"></div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-primary" onclick="saveJobSources()">Save Job Sources</button>
+      </div>
+    </div>
+
+    <!-- Telegram -->
+    <div class="settings-section">
+      <h3>📱 Telegram Notifications <span id="telegram-badge" class="badge b-gray" style="font-weight:400"></span></h3>
+      <p class="section-desc">Get a message on your phone when new jobs match your profile. Free to set up.</p>
+      <div class="alert alert-info" style="margin-bottom:16px">
+        <strong>How to set up (takes 3 minutes):</strong><br>
+        1. Open Telegram → search for <strong>@BotFather</strong> → send <code>/newbot</code><br>
+        2. Follow the prompts → copy the token BotFather gives you<br>
+        3. Start a chat with your new bot → paste the token below → click "Get Chat ID"
+      </div>
+      <div class="settings-grid">
+        <div class="field">
+          <label class="field-label">Bot Token</label>
+          <input type="password" id="tg-token" placeholder="1234567890:ABCdef..." autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Chat ID</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="tg-chat-id" placeholder="123456789"/>
+            <button class="btn btn-ghost btn-sm" onclick="getTelegramChatId()" title="Fetch your Chat ID automatically" style="white-space:nowrap">Get ID</button>
+          </div>
+        </div>
+      </div>
+      <div class="save-row">
+        <button class="btn btn-ghost" onclick="testTelegram()">📨 Send test message</button>
+        <button class="btn btn-primary" onclick="saveTelegram()">Save Telegram</button>
+      </div>
+      <div class="conn-status" id="tg-status"></div>
+    </div>
+
+    <!-- Application Rules -->
+    <div class="settings-section">
+      <h3>🛡️ Application Rules</h3>
+      <p class="section-desc">Control how the platform behaves when applying to jobs.</p>
+      <div class="toggle-row">
+        <div>
+          <label>Dry Run (preview only)</label>
+          <div class="toggle-desc">When on, the platform finds and scores jobs but does NOT submit any applications</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="rules-dry-run" onchange="saveRules()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <label>Require my approval before submitting</label>
+          <div class="toggle-desc">You must click "Approve" on each application before it is submitted</div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="rules-human-approval" onchange="saveRules()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <label>Max applications per day</label>
+          <div class="toggle-desc">Safety limit — the platform will not submit more than this many applications in 24 hours</div>
+        </div>
+        <div class="number-input">
+          <input type="number" id="rules-max-daily" min="1" max="50" value="10" onchange="saveRules()" style="width:70px"/>
+          <span style="font-size:12px;color:var(--muted)">per day</span>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <label>Minimum match score to apply</label>
+          <div class="toggle-desc">Only apply to jobs that score at least this percentage</div>
+        </div>
+        <div class="number-input">
+          <input type="number" id="rules-min-score" min="0" max="100" value="65" onchange="saveRules()" style="width:70px"/>
+          <span style="font-size:12px;color:var(--muted)">%</span>
+        </div>
+      </div>
+      <div class="conn-status" id="rules-status"></div>
+    </div>
+  </section>
+
   <!-- ── Scraper ── -->
   <section id="scraper" class="page">
     <div class="page-header">
@@ -381,6 +627,7 @@ function nav(id, el) {
     cvs: loadCVs,
     tasks: loadTasks,
     scraper: loadScraperPage,
+    settings: loadSettings,
   })[id]?.();
 }
 
@@ -477,7 +724,7 @@ function loadOnboarding(stats) {
           <div>
             <strong>Set up free AI</strong><br>
             <span style="color:var(--muted)">
-              ${aiOK ? stats.ai_provider.name+' active' : 'Install <a href="https://ollama.com/download" target="_blank">Ollama</a> or get a free <a href="https://console.groq.com" target="_blank">Groq key</a>'}
+              ${aiOK ? stats.ai_provider.name+' active' : '<a href="#" onclick="nav(\'settings\')">Go to Settings → AI Provider →</a>'}
             </span>
           </div>
         </div>
@@ -769,19 +1016,12 @@ async function openCL(jobId, title, company) {
     document.getElementById('cl-content').placeholder = '';
     let msg = e.message;
     // Show helpful setup instructions for missing AI
-    if (msg.includes('No AI provider')) {
+    if (msg.includes('No AI provider') || msg.includes('not configured')) {
       document.getElementById('cl-warnings').innerHTML = `
         <div class="alert alert-warn">
           <strong>AI not configured yet.</strong><br><br>
-          <strong>Option 1 — Free local AI (Ollama):</strong><br>
-          1. Download from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a><br>
-          2. Run: <code>ollama pull llama3.1</code><br>
-          3. Ollama starts automatically — come back and try again<br><br>
-          <strong>Option 2 — Free cloud AI (Groq):</strong><br>
-          1. Sign up free at <a href="https://console.groq.com" target="_blank">console.groq.com</a><br>
-          2. Create an API key<br>
-          3. Add <code>GROQ_API_KEY=...</code> to <code>config/.env</code><br>
-          4. Restart the backend: <code>python run.py api</code>
+          Go to <a href="#" onclick="closeModal();nav('settings',document.querySelector('nav a:last-child'))">⚙️ Settings → AI Provider</a>
+          and add a free Groq API key or DeepSeek key. Takes under 2 minutes.
         </div>`;
     } else {
       document.getElementById('cl-warnings').innerHTML = `<div class="alert alert-warn">Error: ${msg}</div>`;
@@ -927,6 +1167,276 @@ function toast(msg, type='success') {
   el.textContent = msg;
   el.className = `toast ${type} show`;
   setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+// ══════════════════════════════════════════════
+// Settings
+// ══════════════════════════════════════════════
+
+let _activeProvider = 'deepseek';
+
+async function loadSettings() {
+  try {
+    const s = await api('/api/settings');
+
+    // AI
+    const ai = s.ai || {};
+    _activeProvider = ai.active_provider?.toLowerCase() || 'deepseek';
+    if (ai.deepseek_api_key) document.getElementById('deepseek-key').value = ai.deepseek_api_key;
+    if (ai.groq_api_key)     document.getElementById('groq-key').value     = ai.groq_api_key;
+    if (ai.openai_api_key)   document.getElementById('openai-key').value   = ai.openai_api_key;
+    updateProviderCards(_activeProvider);
+    const provName = ai.active_provider || 'none';
+    const badge = document.getElementById('ai-provider-badge');
+    if (provName !== 'none') {
+      badge.textContent = provName + ' active';
+      badge.className = 'badge b-green';
+    } else {
+      badge.textContent = 'not configured';
+      badge.className = 'badge b-amber';
+    }
+
+    // LinkedIn
+    const li = s.linkedin || {};
+    if (li.email)    document.getElementById('linkedin-email').value    = li.email;
+    if (li.password) document.getElementById('linkedin-password').value = li.password;
+    setBadge('linkedin-badge', li.connected, li.email);
+
+    // ProtonMail
+    const pm = s.protonmail || {};
+    if (pm.email)    document.getElementById('proton-email').value    = pm.email;
+    if (pm.password) document.getElementById('proton-password').value = pm.password;
+    setBadge('proton-badge', pm.connected, pm.email);
+
+    // Job sources
+    const js = s.job_sources || {};
+    if (js.adzuna_app_id)  document.getElementById('adzuna-id').value  = js.adzuna_app_id;
+    if (js.adzuna_app_key) document.getElementById('adzuna-key').value = js.adzuna_app_key;
+    if (js.reed_api_key)   document.getElementById('reed-key').value   = js.reed_api_key;
+
+    // Telegram
+    const tg = s.telegram || {};
+    if (tg.bot_token) document.getElementById('tg-token').value   = tg.bot_token;
+    if (tg.chat_id)   document.getElementById('tg-chat-id').value = tg.chat_id;
+    setBadge('telegram-badge', tg.connected, tg.chat_id);
+
+    // Rules
+    const r = s.rules || {};
+    document.getElementById('rules-dry-run').checked       = r.dry_run ?? true;
+    document.getElementById('rules-human-approval').checked = r.human_approval ?? true;
+    document.getElementById('rules-max-daily').value       = r.max_daily_apps ?? 10;
+    document.getElementById('rules-min-score').value       = r.min_match_score ?? 65;
+
+  } catch(e) {
+    console.error('Failed to load settings:', e.message);
+  }
+}
+
+function setBadge(id, connected, hint) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (connected) {
+    el.textContent = hint ? 'connected: ' + hint : 'connected';
+    el.className = 'badge b-green';
+  } else {
+    el.textContent = 'not configured';
+    el.className = 'badge b-gray';
+  }
+}
+
+function selectProvider(name) {
+  _activeProvider = name;
+  updateProviderCards(name);
+}
+
+function updateProviderCards(active) {
+  ['deepseek','groq','openai'].forEach(n => {
+    const card  = document.getElementById('pc-' + n);
+    const field = document.getElementById('ai-' + n + '-field');
+    if (card)  card.classList.toggle('active', n === active);
+    if (field) field.style.display = n === active ? '' : 'none';
+  });
+}
+
+async function saveAI() {
+  const data = {};
+  const keyMap = { deepseek: 'deepseek_api_key', groq: 'groq_api_key', openai: 'openai_api_key' };
+  const fieldMap = { deepseek: 'deepseek-key', groq: 'groq-key', openai: 'openai-key' };
+  const k = fieldMap[_activeProvider];
+  if (k) {
+    const val = document.getElementById(k)?.value?.trim();
+    if (val && !val.includes('••')) data[keyMap[_activeProvider]] = val;
+  }
+  await settingsSave('ai', data, 'ai-status');
+}
+
+async function saveLinkedIn() {
+  const data = {};
+  const email = document.getElementById('linkedin-email').value.trim();
+  const pass  = document.getElementById('linkedin-password').value;
+  if (email) data.email = email;
+  if (pass && !pass.includes('••')) data.password = pass;
+  await settingsSave('linkedin', data, 'linkedin-status');
+  if (email) setBadge('linkedin-badge', true, email);
+}
+
+async function saveProtonMail() {
+  const data = {};
+  const email = document.getElementById('proton-email').value.trim();
+  const pass  = document.getElementById('proton-password').value;
+  if (email) data.email = email;
+  if (pass && !pass.includes('••')) data.password = pass;
+  await settingsSave('protonmail', data, 'proton-status');
+  if (email) setBadge('proton-badge', true, email);
+}
+
+async function saveJobSources() {
+  const data = {};
+  const adzId  = document.getElementById('adzuna-id').value.trim();
+  const adzKey = document.getElementById('adzuna-key').value;
+  const reedK  = document.getElementById('reed-key').value;
+  if (adzId)                        data.adzuna_app_id  = adzId;
+  if (adzKey && !adzKey.includes('••')) data.adzuna_app_key = adzKey;
+  if (reedK  && !reedK.includes('••'))  data.reed_api_key   = reedK;
+  await settingsSave('job_sources', data, null);
+  toast('Job source settings saved!', 'success');
+}
+
+async function saveTelegram() {
+  const data = {};
+  const token  = document.getElementById('tg-token').value;
+  const chatId = document.getElementById('tg-chat-id').value.trim();
+  if (token  && !token.includes('••'))  data.bot_token = token;
+  if (chatId) data.chat_id = chatId;
+  await settingsSave('telegram', data, 'tg-status');
+  if (chatId) setBadge('telegram-badge', true, chatId);
+}
+
+async function saveRules() {
+  const data = {
+    dry_run:        document.getElementById('rules-dry-run').checked,
+    human_approval: document.getElementById('rules-human-approval').checked,
+    max_daily_apps: parseInt(document.getElementById('rules-max-daily').value) || 10,
+    min_match_score: parseInt(document.getElementById('rules-min-score').value) || 65,
+  };
+  try {
+    await api('/api/settings/rules', { method: 'POST', body: JSON.stringify({ data }) });
+    showConnStatus('rules-status', true, 'Rules saved.');
+    setTimeout(() => hideConnStatus('rules-status'), 2000);
+  } catch(e) {
+    showConnStatus('rules-status', false, e.message);
+  }
+}
+
+async function settingsSave(section, data, statusEl) {
+  try {
+    await api(`/api/settings/${section}`, { method: 'POST', body: JSON.stringify({ data }) });
+    if (statusEl) showConnStatus(statusEl, true, 'Saved successfully.');
+    toast('Settings saved!', 'success');
+    setTimeout(() => statusEl && hideConnStatus(statusEl), 3000);
+  } catch(e) {
+    if (statusEl) showConnStatus(statusEl, false, e.message);
+    toast('Save failed: ' + e.message, 'error');
+  }
+}
+
+async function testAI() {
+  showConnStatus('ai-status', null, '⏳ Testing AI connection…');
+  try {
+    const r = await api('/api/settings/test/ai', { method: 'POST' });
+    showConnStatus('ai-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+    if (r.ok) {
+      const badge = document.getElementById('ai-provider-badge');
+      badge.className = 'badge b-green';
+      // Refresh sidebar AI pill
+      loadAIStatus();
+    }
+  } catch(e) { showConnStatus('ai-status', false, e.message); }
+}
+
+async function testLinkedIn() {
+  // Save first, then test
+  await saveLinkedIn();
+  showConnStatus('linkedin-status', null, '⏳ Verifying…');
+  try {
+    const r = await api('/api/settings/test/linkedin', { method: 'POST' });
+    showConnStatus('linkedin-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+  } catch(e) { showConnStatus('linkedin-status', false, e.message); }
+}
+
+async function testProtonMail() {
+  await saveProtonMail();
+  showConnStatus('proton-status', null, '⏳ Verifying…');
+  try {
+    const r = await api('/api/settings/test/protonmail', { method: 'POST' });
+    showConnStatus('proton-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+  } catch(e) { showConnStatus('proton-status', false, e.message); }
+}
+
+async function testAdzuna() {
+  const adzId  = document.getElementById('adzuna-id').value.trim();
+  const adzKey = document.getElementById('adzuna-key').value;
+  if (adzId || adzKey) await saveJobSources();
+  showConnStatus('adzuna-status', null, '⏳ Testing Adzuna…');
+  try {
+    const r = await api('/api/settings/test/adzuna', { method: 'POST' });
+    showConnStatus('adzuna-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+  } catch(e) { showConnStatus('adzuna-status', false, e.message); }
+}
+
+async function testReed() {
+  const reedK = document.getElementById('reed-key').value;
+  if (reedK) await saveJobSources();
+  showConnStatus('reed-status', null, '⏳ Testing Reed…');
+  try {
+    const r = await api('/api/settings/test/reed', { method: 'POST' });
+    showConnStatus('reed-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+  } catch(e) { showConnStatus('reed-status', false, e.message); }
+}
+
+async function testTelegram() {
+  await saveTelegram();
+  showConnStatus('tg-status', null, '⏳ Sending test message…');
+  try {
+    const r = await api('/api/settings/test/telegram', { method: 'POST' });
+    showConnStatus('tg-status', r.ok, r.message + (r.detail ? ' — ' + r.detail : ''));
+  } catch(e) { showConnStatus('tg-status', false, e.message); }
+}
+
+async function getTelegramChatId() {
+  const token = document.getElementById('tg-token').value.trim();
+  if (!token || token.includes('••')) {
+    toast('Enter your Bot Token first', 'warn'); return;
+  }
+  try {
+    const r = await fetch(`https://api.telegram.org/bot${token}/getUpdates`);
+    const data = await r.json();
+    const updates = data.result || [];
+    if (!updates.length) {
+      toast('No updates yet. Start a chat with your bot on Telegram, send it any message, then click Get ID again.', 'warn');
+      return;
+    }
+    const chatId = updates[updates.length - 1].message?.chat?.id;
+    if (chatId) {
+      document.getElementById('tg-chat-id').value = chatId;
+      toast('Chat ID found: ' + chatId, 'success');
+    } else {
+      toast('Could not find chat ID. Send a message to your bot first.', 'warn');
+    }
+  } catch(e) { toast('Could not reach Telegram API: ' + e.message, 'error'); }
+}
+
+function showConnStatus(id, ok, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'conn-status ' + (ok === null ? 'ok' : ok ? 'ok' : 'fail');
+  el.style.color = ok === null ? 'var(--muted)' : '';
+  el.textContent = msg;
+}
+
+function hideConnStatus(id) {
+  const el = document.getElementById(id);
+  if (el) el.className = 'conn-status';
 }
 
 // ══════════════════════════════════════════════

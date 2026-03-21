@@ -79,10 +79,12 @@ app.add_middleware(
 from backend.api.jobs import router as jobs_router
 from backend.api.documents import router as documents_router
 from backend.api.scraper import router as scraper_router
+from backend.api.settings import router as settings_router
 
 app.include_router(jobs_router)
 app.include_router(documents_router)
 app.include_router(scraper_router)
+app.include_router(settings_router)
 
 
 # --------------------------------------------------------------------------- #
