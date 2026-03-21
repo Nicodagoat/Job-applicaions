@@ -32,7 +32,7 @@ OLLAMA_BASE_URL  = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL     = os.environ.get("OLLAMA_MODEL", "llama3.1")
 
 GROQ_API_URL     = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL       = "llama-3.1-70b-versatile"
+GROQ_MODEL       = "llama-3.3-70b-versatile"
 
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"
 DEEPSEEK_MODEL   = "deepseek-chat"
