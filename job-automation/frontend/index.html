@@ -171,6 +171,22 @@
     .provider-card .pc-desc{font-size:11px;color:var(--muted)}
     .provider-card .pc-badge{position:absolute;top:8px;right:8px}
     .save-row{display:flex;justify-content:flex-end;gap:8px;padding-top:6px}
+
+    /* ── Profile / My Info page ── */
+    .profile-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+    .profile-section h3{font-size:14px;font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+    .profile-section .section-desc{font-size:12px;color:var(--muted);margin-bottom:18px}
+    .profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:16px}
+    .exp-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;margin-bottom:10px}
+    .exp-card .remove-btn{position:absolute;top:10px;right:10px;background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1}
+    .exp-card .remove-btn:hover{color:var(--red)}
+    .tag-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+    .tag-item{display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:12px}
+    .tag-item button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;line-height:1;padding:0 0 0 2px}
+    .tag-item button:hover{color:var(--red)}
+    .tag-input-row{display:flex;gap:8px}
+    .tag-input-row input{flex:1}
+    textarea.profile-ta{min-height:80px;resize:vertical}
   </style>
 </head>
 <body>
@@ -186,6 +202,7 @@
     <a href="#" onclick="nav('jobs',this)"><span class="icon">💼</span><span class="nav-label">Job Matches</span></a>
     <a href="#" onclick="nav('applications',this)"><span class="icon">📋</span><span class="nav-label">Applications</span></a>
     <a href="#" onclick="nav('cvs',this)"><span class="icon">📄</span><span class="nav-label">My CVs</span></a>
+    <a href="#" onclick="nav('myinfo',this)"><span class="icon">🪪</span><span class="nav-label">My Info</span></a>
     <a href="#" onclick="nav('tasks',this)"><span class="icon">✅</span><span class="nav-label">Tasks</span></a>
     <a href="#" onclick="nav('scraper',this)"><span class="icon">🤖</span><span class="nav-label">Scraper</span></a>
     <a href="#" onclick="nav('settings',this)"><span class="icon">⚙️</span><span class="nav-label">Settings</span></a>
@@ -319,6 +336,121 @@
       </form>
       <div id="docs-table"></div>
     </div>
+  </section>
+
+  <!-- ── My Info ── -->
+  <section id="myinfo" class="page">
+    <div class="page-header">
+      <h1>My Info</h1>
+      <p>All your personal details in one place — used to fill in job applications automatically</p>
+    </div>
+
+    <!-- Personal Details -->
+    <div class="profile-section">
+      <h3>🪪 Personal Details</h3>
+      <p class="section-desc">Basic contact info used on cover letters and application forms.</p>
+      <div class="profile-grid">
+        <div class="field"><label class="field-label">Full Name</label><input type="text" id="pi-name" placeholder="Your full name"/></div>
+        <div class="field"><label class="field-label">Email</label><input type="email" id="pi-email" placeholder="your@email.com"/></div>
+        <div class="field"><label class="field-label">Phone</label><input type="text" id="pi-phone" placeholder="+44 7700 000000"/></div>
+        <div class="field"><label class="field-label">Current Location</label><input type="text" id="pi-location" placeholder="City, Country"/></div>
+        <div class="field"><label class="field-label">Nationality</label><input type="text" id="pi-nationality" placeholder="e.g. Italian"/></div>
+        <div class="field"><label class="field-label">Date of Birth</label><input type="text" id="pi-dob" placeholder="DD/MM/YYYY (optional)"/></div>
+        <div class="field"><label class="field-label">LinkedIn URL</label><input type="text" id="pi-linkedin" placeholder="https://linkedin.com/in/..."/></div>
+        <div class="field"><label class="field-label">Website / Portfolio</label><input type="text" id="pi-website" placeholder="https://..."/></div>
+        <div class="field"><label class="field-label">Notice Period</label><input type="text" id="pi-notice" placeholder="e.g. 1 month, Immediately"/></div>
+      </div>
+      <div class="save-row"><button class="btn btn-primary" onclick="savePersonal()">Save Personal Details</button></div>
+      <div class="conn-status" id="personal-status"></div>
+    </div>
+
+    <!-- About / Summary -->
+    <div class="profile-section">
+      <h3>📝 Professional Summary</h3>
+      <p class="section-desc">A short bio used by the AI when writing cover letters.</p>
+      <div class="field">
+        <textarea class="profile-ta" id="pi-summary" rows="4" placeholder="Describe your professional background, key strengths, and career goals…"></textarea>
+      </div>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveSummary()">Save Summary</button></div>
+      <div class="conn-status" id="summary-status"></div>
+    </div>
+
+    <!-- Languages -->
+    <div class="profile-section">
+      <h3>🌍 Languages</h3>
+      <p class="section-desc">Spoken languages and proficiency — often asked on application forms.</p>
+      <div id="lang-list"></div>
+      <button class="btn btn-ghost" onclick="addLanguage()" style="margin-bottom:14px">+ Add language</button>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveLanguages()">Save Languages</button></div>
+      <div class="conn-status" id="lang-status"></div>
+    </div>
+
+    <!-- Skills -->
+    <div class="profile-section">
+      <h3>🛠️ Skills</h3>
+      <p class="section-desc">Key skills for the AI to highlight in cover letters and for job matching.</p>
+      <div class="tag-list" id="skills-tags"></div>
+      <div class="tag-input-row">
+        <input type="text" id="skill-input" placeholder="Type a skill and press Enter…" onkeydown="if(event.key==='Enter'){event.preventDefault();addSkill()}"/>
+        <button class="btn btn-ghost" onclick="addSkill()">Add</button>
+      </div>
+      <div class="save-row" style="margin-top:14px"><button class="btn btn-primary" onclick="saveSkills()">Save Skills</button></div>
+      <div class="conn-status" id="skills-status"></div>
+    </div>
+
+    <!-- Work Experience -->
+    <div class="profile-section">
+      <h3>💼 Work Experience</h3>
+      <p class="section-desc">Your employment history — referenced by the AI when generating cover letters.</p>
+      <div id="exp-list"></div>
+      <button class="btn btn-ghost" onclick="addExperience()" style="margin-bottom:14px">+ Add position</button>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveExperience()">Save Experience</button></div>
+      <div class="conn-status" id="exp-status"></div>
+    </div>
+
+    <!-- Education -->
+    <div class="profile-section">
+      <h3>🎓 Education</h3>
+      <p class="section-desc">Degrees and qualifications — used in cover letters and application forms.</p>
+      <div id="edu-list"></div>
+      <button class="btn btn-ghost" onclick="addEducation()" style="margin-bottom:14px">+ Add qualification</button>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveEducation()">Save Education</button></div>
+      <div class="conn-status" id="edu-status"></div>
+    </div>
+
+    <!-- Visa / Right to Work -->
+    <div class="profile-section">
+      <h3>✈️ Visa &amp; Right to Work</h3>
+      <p class="section-desc">Work authorisation — helps the platform filter jobs you're eligible for.</p>
+      <div class="profile-grid">
+        <div class="field">
+          <label class="field-label">Requires Sponsorship?</label>
+          <select id="pi-sponsorship" style="width:auto">
+            <option value="true">Yes — I need visa sponsorship</option>
+            <option value="false">No — I have the right to work</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Right to Work In</label>
+          <input type="text" id="pi-right-to-work" placeholder="UK, EU (comma separated)"/>
+        </div>
+      </div>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveVisa()">Save Visa Info</button></div>
+      <div class="conn-status" id="visa-status"></div>
+    </div>
+
+    <!-- Salary -->
+    <div class="profile-section">
+      <h3>💰 Salary Expectations</h3>
+      <p class="section-desc">Minimum salary — used to filter out underpaying roles.</p>
+      <div class="profile-grid">
+        <div class="field"><label class="field-label">Minimum (GBP £)</label><input type="number" id="pi-salary-gbp" placeholder="35000"/></div>
+        <div class="field"><label class="field-label">Minimum (EUR €)</label><input type="number" id="pi-salary-eur" placeholder="40000"/></div>
+      </div>
+      <div class="save-row"><button class="btn btn-primary" onclick="saveSalary()">Save Salary</button></div>
+      <div class="conn-status" id="salary-status"></div>
+    </div>
+
   </section>
 
   <!-- ── Tasks ── -->
@@ -625,6 +757,7 @@ function nav(id, el) {
     jobs: loadJobs,
     applications: loadApps,
     cvs: loadCVs,
+    myinfo: loadMyInfo,
     tasks: loadTasks,
     scraper: loadScraperPage,
     settings: loadSettings,
@@ -1437,6 +1570,324 @@ function showConnStatus(id, ok, msg) {
 function hideConnStatus(id) {
   const el = document.getElementById(id);
   if (el) el.className = 'conn-status';
+}
+
+// ══════════════════════════════════════════════
+// My Info / Profile
+// ══════════════════════════════════════════════
+
+let _profile = {};
+let _skills  = [];
+
+async function loadMyInfo() {
+  try {
+    _profile = await api('/api/profile');
+    const p = _profile.personal || {};
+    document.getElementById('pi-name').value        = p.name        || '';
+    document.getElementById('pi-email').value       = p.email       || '';
+    document.getElementById('pi-phone').value       = p.phone       || '';
+    document.getElementById('pi-location').value    = p.current_location || '';
+    document.getElementById('pi-nationality').value = p.nationality  || '';
+    document.getElementById('pi-dob').value         = p.date_of_birth || '';
+    document.getElementById('pi-linkedin').value    = p.linkedin     || '';
+    document.getElementById('pi-website').value     = p.website      || '';
+    document.getElementById('pi-notice').value      = p.notice_period || '';
+    document.getElementById('pi-summary').value     = _profile.summary || '';
+
+    // Visa
+    const visa = _profile.visa || {};
+    document.getElementById('pi-sponsorship').value    = String(visa.requires_sponsorship ?? true);
+    document.getElementById('pi-right-to-work').value  = (visa.right_to_work || []).join(', ');
+
+    // Salary
+    const sal = _profile.salary || {};
+    document.getElementById('pi-salary-gbp').value = sal.minimum_gbp || '';
+    document.getElementById('pi-salary-eur').value = sal.minimum_eur || '';
+
+    // Skills
+    _skills = [...(_profile.skills || [])];
+    renderSkills();
+
+    // Languages
+    renderLanguages(_profile.languages || []);
+
+    // Experience
+    renderExperience(_profile.work_experience || []);
+
+    // Education
+    renderEducation(_profile.education || []);
+
+  } catch(e) {
+    toast('Could not load profile: ' + e.message, 'error');
+  }
+}
+
+// ── Personal ──
+async function savePersonal() {
+  const personal = {
+    name:             document.getElementById('pi-name').value.trim(),
+    email:            document.getElementById('pi-email').value.trim(),
+    phone:            document.getElementById('pi-phone').value.trim(),
+    current_location: document.getElementById('pi-location').value.trim(),
+    nationality:      document.getElementById('pi-nationality').value.trim(),
+    date_of_birth:    document.getElementById('pi-dob').value.trim(),
+    linkedin:         document.getElementById('pi-linkedin').value.trim(),
+    website:          document.getElementById('pi-website').value.trim(),
+    notice_period:    document.getElementById('pi-notice').value.trim(),
+    open_to_relocation: (_profile.personal || {}).open_to_relocation ?? true,
+    right_to_work:    (_profile.personal || {}).right_to_work || [],
+  };
+  await profileSave('personal', personal, 'personal-status');
+}
+
+async function saveSummary() {
+  const text = document.getElementById('pi-summary').value.trim();
+  await profileSave('summary', text, 'summary-status');
+}
+
+// ── Skills ──
+function renderSkills() {
+  document.getElementById('skills-tags').innerHTML = _skills.map((s, i) =>
+    `<span class="tag-item">${s}<button onclick="removeSkill(${i})" title="Remove">×</button></span>`
+  ).join('');
+}
+
+function addSkill() {
+  const inp = document.getElementById('skill-input');
+  const val = inp.value.trim();
+  if (!val) return;
+  _skills.push(val);
+  inp.value = '';
+  renderSkills();
+}
+
+function removeSkill(i) {
+  _skills.splice(i, 1);
+  renderSkills();
+}
+
+async function saveSkills() {
+  await profileSave('skills', _skills, 'skills-status');
+}
+
+// ── Languages ──
+function renderLanguages(langs) {
+  const el = document.getElementById('lang-list');
+  el.innerHTML = langs.map((l, i) => `
+    <div class="exp-card" id="lang-${i}">
+      <button class="remove-btn" onclick="removeLang(${i})">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label class="field-label">Language</label>
+          <input type="text" id="lang-lang-${i}" value="${esc(l.language||'')}" placeholder="e.g. English"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Proficiency</label>
+          <select id="lang-prof-${i}">
+            ${['Native','Fluent (C2)','Fluent (C1)','Advanced (B2)','Intermediate (B1)','Basic (A2)','Beginner (A1)']
+              .map(p => `<option${p===l.proficiency?' selected':''}>${p}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function addLanguage() {
+  const langs = collectLanguages();
+  langs.push({ language: '', proficiency: 'Intermediate (B1)' });
+  renderLanguages(langs);
+}
+
+function removeLang(i) {
+  const langs = collectLanguages();
+  langs.splice(i, 1);
+  renderLanguages(langs);
+}
+
+function collectLanguages() {
+  const cards = document.querySelectorAll('#lang-list .exp-card');
+  return Array.from(cards).map((_, i) => ({
+    language:    document.getElementById(`lang-lang-${i}`)?.value.trim() || '',
+    proficiency: document.getElementById(`lang-prof-${i}`)?.value || '',
+  }));
+}
+
+async function saveLanguages() {
+  await profileSave('languages', collectLanguages(), 'lang-status');
+}
+
+// ── Work Experience ──
+function renderExperience(exps) {
+  const el = document.getElementById('exp-list');
+  el.innerHTML = exps.map((e, i) => `
+    <div class="exp-card" id="exp-${i}">
+      <button class="remove-btn" onclick="removeExp(${i})">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label class="field-label">Job Title</label>
+          <input type="text" id="exp-title-${i}" value="${esc(e.title||'')}" placeholder="e.g. ESG Analyst"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Company</label>
+          <input type="text" id="exp-company-${i}" value="${esc(e.company||'')}" placeholder="Company name"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Location</label>
+          <input type="text" id="exp-location-${i}" value="${esc(e.location||'')}" placeholder="City, Country"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Start Date</label>
+          <input type="text" id="exp-start-${i}" value="${esc(e.start_date||'')}" placeholder="MM/YYYY"/>
+        </div>
+        <div class="field">
+          <label class="field-label">End Date</label>
+          <input type="text" id="exp-end-${i}" value="${esc(e.end_date||'')}" placeholder="MM/YYYY or leave blank if current"/>
+        </div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="exp-current-${i}" style="width:auto" ${e.current?'checked':''}/>
+            Current position
+          </label>
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label class="field-label">Description / Key responsibilities</label>
+        <textarea class="profile-ta" id="exp-desc-${i}" rows="3" placeholder="Describe your role and key achievements…">${esc(e.description||'')}</textarea>
+      </div>
+    </div>`).join('');
+}
+
+function addExperience() {
+  const exps = collectExperience();
+  exps.unshift({ title:'', company:'', location:'', start_date:'', end_date:'', current:false, description:'' });
+  renderExperience(exps);
+}
+
+function removeExp(i) {
+  const exps = collectExperience();
+  exps.splice(i, 1);
+  renderExperience(exps);
+}
+
+function collectExperience() {
+  const cards = document.querySelectorAll('#exp-list .exp-card');
+  return Array.from(cards).map((_, i) => ({
+    title:       document.getElementById(`exp-title-${i}`)?.value.trim()   || '',
+    company:     document.getElementById(`exp-company-${i}`)?.value.trim() || '',
+    location:    document.getElementById(`exp-location-${i}`)?.value.trim()|| '',
+    start_date:  document.getElementById(`exp-start-${i}`)?.value.trim()   || '',
+    end_date:    document.getElementById(`exp-end-${i}`)?.value.trim()     || '',
+    current:     document.getElementById(`exp-current-${i}`)?.checked      || false,
+    description: document.getElementById(`exp-desc-${i}`)?.value.trim()    || '',
+  }));
+}
+
+async function saveExperience() {
+  await profileSave('work_experience', collectExperience(), 'exp-status');
+}
+
+// ── Education ──
+function renderEducation(edus) {
+  const el = document.getElementById('edu-list');
+  el.innerHTML = edus.map((e, i) => `
+    <div class="exp-card" id="edu-${i}">
+      <button class="remove-btn" onclick="removeEdu(${i})">×</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label class="field-label">Degree / Qualification</label>
+          <input type="text" id="edu-degree-${i}" value="${esc(e.degree||'')}" placeholder="e.g. MSc Environmental Policy"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Institution</label>
+          <input type="text" id="edu-inst-${i}" value="${esc(e.institution||'')}" placeholder="University or college name"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Location</label>
+          <input type="text" id="edu-loc-${i}" value="${esc(e.location||'')}" placeholder="City, Country"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Start Date</label>
+          <input type="text" id="edu-start-${i}" value="${esc(e.start_date||'')}" placeholder="YYYY"/>
+        </div>
+        <div class="field">
+          <label class="field-label">End Date</label>
+          <input type="text" id="edu-end-${i}" value="${esc(e.end_date||'')}" placeholder="YYYY"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Grade / Classification</label>
+          <input type="text" id="edu-grade-${i}" value="${esc(e.grade||'')}" placeholder="e.g. First Class, 110/110"/>
+        </div>
+      </div>
+      <div class="field" style="margin-top:8px">
+        <label class="field-label">Notes (dissertation, awards, relevant modules…)</label>
+        <textarea class="profile-ta" id="edu-notes-${i}" rows="2" placeholder="Optional extra details…">${esc(e.notes||'')}</textarea>
+      </div>
+    </div>`).join('');
+}
+
+function addEducation() {
+  const edus = collectEducation();
+  edus.unshift({ degree:'', institution:'', location:'', start_date:'', end_date:'', grade:'', notes:'' });
+  renderEducation(edus);
+}
+
+function removeEdu(i) {
+  const edus = collectEducation();
+  edus.splice(i, 1);
+  renderEducation(edus);
+}
+
+function collectEducation() {
+  const cards = document.querySelectorAll('#edu-list .exp-card');
+  return Array.from(cards).map((_, i) => ({
+    degree:      document.getElementById(`edu-degree-${i}`)?.value.trim() || '',
+    institution: document.getElementById(`edu-inst-${i}`)?.value.trim()   || '',
+    location:    document.getElementById(`edu-loc-${i}`)?.value.trim()    || '',
+    start_date:  document.getElementById(`edu-start-${i}`)?.value.trim()  || '',
+    end_date:    document.getElementById(`edu-end-${i}`)?.value.trim()    || '',
+    grade:       document.getElementById(`edu-grade-${i}`)?.value.trim()  || '',
+    notes:       document.getElementById(`edu-notes-${i}`)?.value.trim()  || '',
+  }));
+}
+
+async function saveEducation() {
+  await profileSave('education', collectEducation(), 'edu-status');
+}
+
+// ── Visa ──
+async function saveVisa() {
+  const visa = {
+    requires_sponsorship: document.getElementById('pi-sponsorship').value === 'true',
+    right_to_work: document.getElementById('pi-right-to-work').value
+      .split(',').map(s => s.trim()).filter(Boolean),
+    acceptable_visa_types: (_profile.visa || {}).acceptable_visa_types || [],
+  };
+  await profileSave('visa', visa, 'visa-status');
+}
+
+// ── Salary ──
+async function saveSalary() {
+  const salary = {
+    currency_preference: 'GBP',
+    minimum_gbp: parseInt(document.getElementById('pi-salary-gbp').value) || 0,
+    minimum_eur: parseInt(document.getElementById('pi-salary-eur').value) || 0,
+    negotiate: true,
+  };
+  await profileSave('salary', salary, 'salary-status');
+}
+
+// ── Shared save helper ──
+async function profileSave(section, data, statusId) {
+  try {
+    await api(`/api/profile/${section}`, { method: 'POST', body: JSON.stringify({ data }) });
+    _profile[section] = data;
+    if (statusId) showConnStatus(statusId, true, 'Saved!');
+    toast('Profile saved!', 'success');
+    setTimeout(() => statusId && hideConnStatus(statusId), 2500);
+  } catch(e) {
+    if (statusId) showConnStatus(statusId, false, e.message);
+    toast('Save failed: ' + e.message, 'error');
+  }
 }
 
 // ══════════════════════════════════════════════

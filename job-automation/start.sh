@@ -19,20 +19,33 @@ else
     exit 1
 fi
 
+# ── Ensure config/.env exists (copy template if missing) ────
+if [ ! -f "config/.env" ]; then
+    cp config/.env.example config/.env
+    echo -e "${YELLOW}⚠  config/.env not found — created from template. Add your API keys in Settings.${NC}"
+fi
+
 # ── Load environment variables ──────────────────────────────
 set -a
-[ -f config/.env ] && source config/.env
+source config/.env
 set +a
+
+# ── Ensure database is initialised ──────────────────────────
+if [ ! -f "database/jobs.db" ]; then
+    echo -e "${CYAN}▶  Initialising database…${NC}"
+    python run.py init-db
+    echo -e "${GREEN}✓  Database ready${NC}"
+fi
+
+# ── Ensure storage directories exist ────────────────────────
+mkdir -p documents/resumes documents/cover_letters documents/certificates \
+         documents/other logs/screenshots
 
 echo ""
 echo -e "${CYAN}╔══════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║  Job Application Platform                    ║${NC}"
 echo -e "${CYAN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
-
-# ── Create required directories ─────────────────────────────
-mkdir -p logs/screenshots documents/resumes documents/cover_letters \
-         documents/certificates documents/other
 
 # ── Start backend API ───────────────────────────────────────
 echo -e "${CYAN}▶  Starting backend API on port 8000…${NC}"

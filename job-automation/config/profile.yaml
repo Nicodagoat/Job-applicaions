@@ -12,10 +12,72 @@ personal:
   linkedin: "https://www.linkedin.com/in/niccolo-andrea-nolli"
   website: "https://niccolo-nolli.notion.site/Niccol-Andrea-Nolli-8f6a1c58fde348afb1f6884d62e0b098"
   current_location: "Milan, Italy"
+  nationality: "Italian"
+  date_of_birth: ""
   open_to_relocation: true
+  notice_period: "1 month"
   right_to_work:
     - UK  # Has studied at SOAS, check visa status
     - EU  # Italian citizen
+
+# ============================================================
+# ABOUT / SUMMARY
+# ============================================================
+summary: >
+  Sustainability and ESG professional with 4 years of experience in sustainability reporting,
+  climate policy, and ESG advisory. Skilled in CSRD, EU Taxonomy, TCFD, and double materiality
+  assessments. Passionate about driving the green transition through evidence-based policy and
+  corporate sustainability strategies.
+
+# ============================================================
+# LANGUAGES
+# ============================================================
+languages:
+  - language: "Italian"
+    proficiency: "Native"
+  - language: "English"
+    proficiency: "Fluent (C1)"
+  - language: "French"
+    proficiency: "Intermediate (B1)"
+
+# ============================================================
+# SKILLS
+# ============================================================
+skills:
+  - "ESG Reporting (CSRD, GRI, TCFD, ISSB)"
+  - "EU Taxonomy"
+  - "Double Materiality Assessment"
+  - "Carbon Footprinting (GHG Protocol)"
+  - "Climate Policy Analysis"
+  - "Sustainability Strategy"
+  - "Stakeholder Engagement"
+  - "Data Analysis (Excel, Python)"
+  - "Report Writing"
+  - "Policy Research"
+
+# ============================================================
+# WORK EXPERIENCE
+# ============================================================
+work_experience:
+  - title: ""
+    company: ""
+    location: ""
+    start_date: ""
+    end_date: ""
+    current: false
+    description: ""
+
+# ============================================================
+# EDUCATION
+# ============================================================
+education:
+  - degree: ""
+    institution: ""
+    location: ""
+    start_date: ""
+    end_date: ""
+    grade: ""
+    notes: ""
 
 # ============================================================
 # JOB TARGETING
